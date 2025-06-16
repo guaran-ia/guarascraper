@@ -25,10 +25,7 @@ class GuaraniScraperPipeline:
         self.files = {}
 
         # Use absolute path to ensure consistency
-        project_root = os.path.dirname(
-            os.path.dirname(os.path.dirname(os.path.dirname(__file__)))
-        )
-        self.corpus_dir = os.path.join(project_root, "corpus")
+        self.corpus_dir = os.path.join(os.path.dirname(os.path.dirname(__file__)), "..", "corpus")
         os.makedirs(self.corpus_dir, exist_ok=True)
 
     def process_item(self, item, spider):

@@ -77,7 +77,7 @@ class GuaraniDetector:
             language = prediction[0][0]
             print(f"DEBUG: FastText detected '{language}' with confidence {confidence:.3f}")
             
-            if language == "__label__gn" and confidence >= 0.7:
+            if language == "__label__gn" and confidence >= 0.6:
                 votes += 1
                 print("DEBUG: FastText VOTED for Guarani")
         except Exception as e:
@@ -89,7 +89,7 @@ class GuaraniDetector:
                 detector = Detector(cleaned_text)
                 print(f"DEBUG: Polyglot detected '{detector.language.code}' with confidence {detector.language.confidence}")
                 
-                if detector.language.code == "gn" and detector.language.confidence >= 70:
+                if detector.language.code == "gn" and detector.language.confidence >= 60:
                     votes += 1
                     print("DEBUG: Polyglot VOTED for Guarani")
             except Exception as e:
