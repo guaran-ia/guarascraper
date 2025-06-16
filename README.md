@@ -57,9 +57,9 @@ Web scrapper application for online Guarani text developed under the initiative 
    4. **Download the FastText language identification model**:
 
    ```bash
-   mkdir -p guarani_scraper/guarani_scraper/utils/lang_model
-   
-   curl https://dl.fbaipublicfiles.com/fasttext/supervised-models/lid.176.bin -o guarani_scraper/guarani_scraper/utils/lang_model/lid.176.bin
+   mkdir -p src/guarani_scraper/utils/lang_model
+
+   curl https://dl.fbaipublicfiles.com/fasttext/supervised-models/lid.176.bin -o src/guarani_scraper/utils/lang_model/lid.176.bin
    ```
 
 ## Usage
@@ -68,7 +68,9 @@ Web scrapper application for online Guarani text developed under the initiative 
 To run the scraper using the included list of Guarani websites:
 
 ```bash
-python3 cli.py --csv data/web_sources.csv
+cd src
+
+python3 ../cli.py --csv ../data/web_sources.csv
 ```
 The scraped Guarani words will be saved in the `corpus` directory, with each file named after the domain from which the words were scraped.
 
@@ -76,6 +78,6 @@ The scraped Guarani words will be saved in the `corpus` directory, with each fil
 
 You can modify the following files to adjust the scraper's behavior:
 
-- **`guarani_scraper/settings.py`**: Adjust crawling settings like delay, throttling, and user agent
-- **`guarani_scraper/guarani_scraper/utils/lang_detector.py`**: Fine-tune the language detection logic
+- **`src/guarani_scraper/settings.py`**: Adjust crawling settings like delay, throttling, and user agent
+- **`src/guarani_scraper/guarani_scraper/utils/lang_detector.py`**: Fine-tune the language detection logic
 - **`data/web_sources.csv`**: Add or remove websites to be scraped
