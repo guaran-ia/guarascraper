@@ -3,7 +3,6 @@ import fasttext
 import os
 import numpy as np
 import nltk
-import nltk
 import re
 
 
