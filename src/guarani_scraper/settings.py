@@ -91,7 +91,10 @@ HTTPCACHE_ENABLED = True
 
 # Set settings whose default value is deprecated to a future-proof value
 FEED_EXPORT_ENCODING = "utf-8"
+
+
 LOG_LEVEL = "INFO"
 RETRY_ENABLED = False
 REDIRECT_ENABLED = False
 DEPTH_LIMIT = 2
+CLOSESPIDER_TIMEOUT = 120

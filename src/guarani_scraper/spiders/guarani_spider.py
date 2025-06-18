@@ -1,6 +1,5 @@
 import csv
 from urllib.parse import urlparse
-import re
 from scrapy.spiders import CrawlSpider, Rule
 from scrapy.linkextractors import LinkExtractor
 from ..utils.lang_detector import GuaraniDetector
@@ -75,14 +74,14 @@ class GuaraniSpider(CrawlSpider):
         text_chunks = response.xpath(
             '//p//text() | //div[not(contains(@class, "nav"))]//text()'
         ).getall()
+        
+        words_found = 0
 
         for chunk in text_chunks:
             chunk = chunk.strip()
             if not chunk or len(chunk) < 100:  # Skip short chunks
                 continue
             
-            words_found = 0
-
             # Check if this chunk is Guarani
             if self.detector.is_guarani(chunk):
                 print("DEBUG: Found Guarani chunk")
@@ -99,10 +98,10 @@ class GuaraniSpider(CrawlSpider):
                         )
 
             else:
-                # Method 2: Check individual words if chunk wasn't detected as Guarani
+                # Check individual words using NLTK directly
                 words = [w.strip() for w in chunk.split() if w.strip()]
                 for word in words:
-                    if len(word) > 2 and self.is_guarani_word(word):
+                    if len(word) > 2 and self.detector._nltk_guarani_check(word):  # Usar NLTK directamente
                         words_found += 1
                         print(f"DEBUG: Found individual Guarani word: '{word}'")
                         yield GuaraniWord(
@@ -110,41 +109,7 @@ class GuaraniSpider(CrawlSpider):
                             url=response.url,
                             domain=urlparse(response.url).netloc,
                         )
-            
-            if words_found > 0:
-                print(f"DEBUG: Total words found in chunk: {words_found}")
+        
+        if words_found > 0:
+            print(f"DEBUG: Total words found in chunk: {words_found}")
     
-    def is_guarani_word(self, word):
-        """
-        Simple word-level Guarani detection.
-        
-        Checks individual words for Guarani characteristics using
-        simplified rules optimized for single words rather than
-        text chunks.
-
-        Args:
-            word (str): Individual word to analyze
-
-        Returns:
-            bool: True if word appears to be Guarani
-        """
-        word = word.lower().strip()
-        
-        # Remove punctuation but preserve Guarani characters and apostrophes
-        word = re.sub(r'[^\w\sñáéíóúãẽĩõũỹ\']', '', word)
-        
-        # Direct match with known Guarani words
-        if word in self.detector.guarani_stopwords:
-            return True
-        
-        # Has nasal vowels (very characteristic of Guarani)
-        if re.search(r'[ãẽĩõũỹ]', word):
-            return True
-        
-        # Has typical Guarani consonant clusters
-        if re.search(r'(mb|nd|ng|ñ)', word):
-            return True
-        
-        # Has typical Guarani morphemes (suffixes)
-        if re.search(r'(kue|gua|va.e|rã|ngo|piko)$', word):
-            return True
