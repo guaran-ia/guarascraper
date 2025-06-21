@@ -16,12 +16,13 @@ class GuaraniSpider(CrawlSpider):
 
     name = "guarani"
 
-    def __init__(self, csv_file=None, *args, **kwargs):
+    def __init__(self, csv_file=None, single_url=None, *args, **kwargs):
         """
-        Initialize the GuaraniSpider with a CSV file containing URLs to crawl.
+        Initialize the GuaraniSpider with either a CSV file or a single URL.
 
         Args:
             csv_file (str): Path to CSV file with URLs to crawl
+            single_url (str): Single URL to crawl
             *args, **kwargs: Additional arguments passed to CrawlSpider
         """
         super(GuaraniSpider, self).__init__(*args, **kwargs)
@@ -40,6 +41,20 @@ class GuaraniSpider(CrawlSpider):
                     domain = urlparse(url).netloc
                     if domain not in self.allowed_domains:
                         self.allowed_domains.append(domain)
+        
+        # Handle single URL input
+        elif single_url:
+            self.start_urls = [single_url]
+            
+            # Extract domain from single URL
+            domain = urlparse(single_url).netloc
+            self.allowed_domains = [domain]
+            
+            print(f"DEBUG: Single URL mode - crawling {single_url}")
+            print(f"DEBUG: Allowed domain: {domain}")
+        
+        else:
+            raise ValueError("Either csv_file or single_url must be provided")
 
         # Configure rules - restrict to allowed domains
         self.rules = (
