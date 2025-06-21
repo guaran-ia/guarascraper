@@ -80,6 +80,7 @@ To scrape a specific website:
 
 ```bash
 cd src
+
 python3 ../cli.py --url https://guaranimeme.blogspot.com/
 ```
 
