@@ -70,14 +70,14 @@ Web scrapper application for online Guarani text developed under the initiative 
 To run the scraper using the included list of Guarani websites:
 
 ```bash
-python3 ../cli.py --csv ../data/web_sources.csv
+python3 cli.py --csv ../data/web_sources.csv
 ```
 
 **Option 2: Scrape a single URL**
 To scrape a specific website:
 
 ```bash
-python3 ../cli.py --url https://guaranimeme.blogspot.com/
+python3 cli.py --url https://guaranimeme.blogspot.com/
 ```
 
 The scraped Guarani words will be saved in the `corpus` directory.
