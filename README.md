@@ -70,8 +70,6 @@ Web scrapper application for online Guarani text developed under the initiative 
 To run the scraper using the included list of Guarani websites:
 
 ```bash
-cd src
-
 python3 ../cli.py --csv ../data/web_sources.csv
 ```
 
@@ -79,8 +77,6 @@ python3 ../cli.py --csv ../data/web_sources.csv
 To scrape a specific website:
 
 ```bash
-cd src
-
 python3 ../cli.py --url https://guaranimeme.blogspot.com/
 ```
 
