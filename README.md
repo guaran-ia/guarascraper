@@ -1,9 +1,14 @@
 # Guarascrapper
 
-Web scrapper application for online Guarani text developed under the initiative UCA Autumn of Code 2025.
+Web scraper application for online Guarani text developed under the initiative UCA Autumn of Code 2025.
+
+---
 
 
 # Web Sources
+
+Web sources selected to extract Guarani text using the scraper.
+
 - [Secretaría Nacional de Cultura Paraguay](https://cultura.gov.py/): part of paraguayan goverment sites
 - [Secreataria de Politica Linguistica](https://spl.gov.py/gn/): part of paraguayan goverment sites
 - [ABC Color](https://www.abc.com.py/): paraguayan newspaper
