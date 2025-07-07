@@ -75,7 +75,7 @@ Web sources selected to extract Guarani text using the scraper.
 To run the scraper using the included list of Guarani websites:
 
 ```bash
-python3 cli.py --csv ../data/web_sources.csv
+python3 cli.py --csv data/web_sources.csv
 ```
 
 **Option 2: Scrape a single URL**
