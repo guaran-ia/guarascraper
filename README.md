@@ -1,13 +1,13 @@
 # Guarascraper
 
-Web scraper application for online Guarani text developed under the initiative UCA Autumn of Code 2025.
+Web scraper application for online Guarani text developed under the GuaranIA project as part of the initiative UCA Autumn of Code 2025.
 
 ---
 
 
-# Web Sources
+# Websites in Guarani
 
-Web sources selected to extract Guarani text using the scraper.
+Manually identified websites that contain text in Guarani
 
 - [Secretaría Nacional de Cultura Paraguay](https://cultura.gov.py/): part of paraguayan goverment sites
 - [Secreataria de Politica Linguistica](https://spl.gov.py/gn/): part of paraguayan goverment sites
@@ -82,10 +82,10 @@ python3 cli.py --csv data/web_sources.csv
 To scrape a specific website:
 
 ```bash
-python3 cli.py --url https://guaranimeme.blogspot.com/
+python3 cli.py --url https://guaranimeme.blogspot.com
 ```
 
-The scraped Guarani words will be saved in the `corpus` directory.
+The scraped Guarani text is saved in the `corpus` directory.
 
 ## Configuration
 
@@ -95,9 +95,9 @@ You can modify the following files to adjust the scraper's behavior:
 - **`src/guarani_scraper/guarani_scraper/utils/lang_detector.py`**: Fine-tune the language detection logic
 - **`data/web_sources.csv`**: Add or remove websites to be scraped
 
-## Limitations
+## Acknowledgement
 
-### Websites that work:
+The scraper proved to work correctly on the following identified websites
 
 - [GuaraniMeme](https://guaranimeme.blogspot.com/): blog about guarani  
 - [Portal Guarani](https://www.portalguarani.com/): history and culture of paraguay  
@@ -111,11 +111,14 @@ You can modify the following files to adjust the scraper's behavior:
 - [Secretaría Nacional de Cultura Paraguay](https://cultura.gov.py/): part of paraguayan goverment sites  
 - [Yvy Marãe'ỹ](https://yvymaraey.edu.py/): institute for cultural studies  
 
-### Websites that didn't work
+Additional work is required to have the application correctly scrape the following identified sites
 
 - [ABC](https://www.abc.com.py/): paraguayan newspaper  
 - [Misa Guarani](https://misaguarani.com/): church readings  
-- [Ultima hora](https://www.ultimahora.com/): paraguayan newspaper  
+- [Ultima hora](https://www.ultimahora.com/): paraguayan newspaper
+
+The following identified websites have not been tested yet
+
 - [Ñane Ñe'ẽ Guarani](https://guaraniete.blogspot.com/): blog about guarani  
 - [lenguagurani](https://lenguaguarani.blogspot.com/): blog about guarani  
 - [Ñe'ẽ](https://revistanee.com.py/index.php/nee/index): journal of linguistic and cultural research  
@@ -123,4 +126,3 @@ You can modify the following files to adjust the scraper's behavior:
 - [Sociedad Biblica Paraguay](https://guarani.global.bible/bible/c6d3311681a81388-01/MAT.1): biblical passages  
 - [Ministerio de Economia y Finanzas Paraguay](https://www.stp.gov.py/v1/?s=%C3%91e%C2%B4%C3%AA+): articles in guarani from a part of paraguayan goverment site  
 
-### Untested websites 
