@@ -2,6 +2,7 @@ import csv
 from urllib.parse import urlparse
 from scrapy.spiders import CrawlSpider, Rule
 from scrapy.linkextractors import LinkExtractor
+from scrapy import Request
 from ..utils.lang_detector import GuaraniDetector
 from ..items import GuaraniWord
 
@@ -25,6 +26,9 @@ class GuaraniSpider(CrawlSpider):
             single_url (str): Single URL to crawl
             *args, **kwargs: Additional arguments passed to CrawlSpider
         """
+        # pop crawl_domain flag (passed from CLI) - default False
+        crawl_domain = kwargs.pop("crawl_domain", False)
+
         super(GuaraniSpider, self).__init__(*args, **kwargs)
         self.detector = GuaraniDetector()
 
@@ -34,38 +38,60 @@ class GuaraniSpider(CrawlSpider):
                 reader = csv.DictReader(f)
                 urls = [row["url"] for row in reader]
                 self.start_urls = urls
-                
+
                 # Extract allowed domains from start URLs
                 self.allowed_domains = []
                 for url in urls:
                     domain = urlparse(url).netloc
                     if domain not in self.allowed_domains:
                         self.allowed_domains.append(domain)
-        
+
         # Handle single URL input
         elif single_url:
             self.start_urls = [single_url]
-            
-            # Extract domain from single URL
             domain = urlparse(single_url).netloc
             self.allowed_domains = [domain]
-            
+
             print(f"DEBUG: Single URL mode - crawling {single_url}")
             print(f"DEBUG: Allowed domain: {domain}")
-        
+
         else:
             raise ValueError("Either csv_file or single_url must be provided")
 
-        # Configure rules - restrict to allowed domains
-        self.rules = (
-            Rule(
-                LinkExtractor(allow_domains=self.allowed_domains), 
-                callback="parse_item", 
-                follow=True
-            ),
-        )
+        # Configure rules - follow links only when crawling domain
+        # If we have either a single URL or a CSV and crawl_domain is False,
+        # operate in single-page mode (do not follow links).
+        if (single_url or csv_file) and not crawl_domain:
+            # single-page mode: do not follow links
+            self.rules = ()
+            self.single_page_only = True
+        else:
+            self.rules = (
+                Rule(
+                    LinkExtractor(allow_domains=self.allowed_domains),
+                    callback="parse_item",
+                    follow=True,
+                ),
+            )
+            self.single_page_only = False
 
         super()._compile_rules()
+
+    async def start(self):
+        """Async start for Scrapy 2.13+.
+
+        - If single-page mode is enabled, schedule only the provided start_urls.
+        - Otherwise, delegate to the parent's async start(), which will
+          produce the standard initial requests and enable rule-based crawling.
+        """
+        self.logger.debug("start: single_page_only=%s start_urls=%s", getattr(self, "single_page_only", False), getattr(self, "start_urls", None))
+        if getattr(self, "single_page_only", False):
+            for url in getattr(self, "start_urls", []):
+                self.logger.debug("scheduling single-page request: %s", url)
+                yield Request(url, callback=self.parse_item, dont_filter=True)
+        else:
+            async for req in super().start():
+                yield req
 
     def parse_item(self, response):
         """
@@ -86,45 +112,66 @@ class GuaraniSpider(CrawlSpider):
             GuaraniWord: Items containing Guarani words along with metadata
                          such as the source URL and domain
         """
-        text_chunks = response.xpath(
-            '//p//text() | //div[not(contains(@class, "nav"))]//text()'
-        ).getall()
+        text_chunks = response.xpath('''
+            //body//*[not(
+                self::script or
+                self::style or
+                self::noscript or
+                self::svg or
+                self::meta or
+                self::link or
+                self::iframe or
+                self::head or
+                self::title
+            )]//text()[normalize-space() and
+                not(ancestor::script) and
+                not(ancestor::style) and
+                not(ancestor::noscript) and
+                not(ancestor::svg) and
+                not(ancestor::iframe)
+            ]
+        ''').getall()
         
         words_found = 0
 
         for chunk in text_chunks:
             chunk = chunk.strip()
-            if not chunk or len(chunk) < 100:  # Skip short chunks
+            if len(chunk) < 100 or not chunk:  # Skip short chunks
                 continue
+            yield GuaraniWord(
+                word=chunk,
+                url=response.url,
+                domain=urlparse(response.url).netloc,
+            )
             
-            # Check if this chunk is Guarani
-            if self.detector.is_guarani(chunk):
-                print("DEBUG: Found Guarani chunk")
-                # Now extract words from this Guarani chunk
-                words = [w.strip() for w in chunk.split() if w.strip()]
-                for word in words:
-                    # Additional filtering if needed
-                    if len(word) > 2:  # Skip very short words
-                        words_found += 1
-                        yield GuaraniWord(
-                            word=word,
-                            url=response.url,
-                            domain=urlparse(response.url).netloc,
-                        )
+            # # Check if this chunk is Guarani
+            # if self.detector.is_guarani(chunk):
+            #     print("DEBUG: Found Guarani chunk")
+            #     # Now extract words from this Guarani chunk
+            #     words = [w.strip() for w in chunk.split() if w.strip()]
+            #     for word in words:
+            #         # Additional filtering if needed
+            #         if len(word) > 2:  # Skip very short words
+            #             words_found += 1
+            #             yield GuaraniWord(
+            #                 word=word,
+            #                 url=response.url,
+            #                 domain=urlparse(response.url).netloc,
+            #             )
 
-            else:
-                # Check individual words using NLTK directly
-                words = [w.strip() for w in chunk.split() if w.strip()]
-                for word in words:
-                    if len(word) > 2 and self.detector._nltk_guarani_check(word):  # Usar NLTK directamente
-                        words_found += 1
-                        print(f"DEBUG: Found individual Guarani word: '{word}'")
-                        yield GuaraniWord(
-                            word=word,
-                            url=response.url,
-                            domain=urlparse(response.url).netloc,
-                        )
+            # else:
+            #     # Check individual words using NLTK directly
+            #     words = [w.strip() for w in chunk.split() if w.strip()]
+            #     for word in words:
+            #         if len(word) > 2 and self.detector._nltk_guarani_check(word):  # Usar NLTK directamente
+            #             words_found += 1
+            #             print(f"DEBUG: Found individual Guarani word: '{word}'")
+            #             yield GuaraniWord(
+            #                 word=word,
+            #                 url=response.url,
+            #                 domain=urlparse(response.url).netloc,
+            #             )
         
-        if words_found > 0:
-            print(f"DEBUG: Total words found in chunk: {words_found}")
+        # if words_found > 0:
+        #     print(f"DEBUG: Total words found in chunk: {words_found}")
     
