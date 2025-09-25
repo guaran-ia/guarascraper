@@ -5,6 +5,8 @@ from scrapy.linkextractors import LinkExtractor
 from scrapy import Request
 from ..utils.lang_detector import GuaraniDetector
 from ..items import GuaraniWord
+import os
+import json
 
 
 class GuaraniSpider(CrawlSpider):
@@ -85,13 +87,70 @@ class GuaraniSpider(CrawlSpider):
           produce the standard initial requests and enable rule-based crawling.
         """
         self.logger.debug("start: single_page_only=%s start_urls=%s", getattr(self, "single_page_only", False), getattr(self, "start_urls", None))
+        # Before scheduling requests, check if the URL has already been scraped
+        # by looking for a domain-specific jsonl file under the project's data/ directory.
         if getattr(self, "single_page_only", False):
             for url in getattr(self, "start_urls", []):
-                self.logger.debug("scheduling single-page request: %s", url)
+                
+                if self._url_already_scraped(url):
+                    self.logger.info("Skipping already-scraped URL: %s", url)
+                    continue  
                 yield Request(url, callback=self.parse_item, dont_filter=True)
         else:
             async for req in super().start():
                 yield req
+
+    def _domain_csv_path(self, domain: str) -> str:
+        """Return the expected jsonl path for a domain inside the top-level data/ dir.
+
+        Normalizes 'www.' prefix away. Example: 'abc.com.py' -> 'data/abc.com/abc.com.csv'
+        """
+        domain = domain.lower().lstrip("www.")
+        workspace_root = os.path.abspath(os.path.join(os.path.dirname(__file__), "..", "..", ".."))
+        data_dir = os.path.join(workspace_root, "data")
+
+        # First check the url_fineweb2 folder where we store domain jsonl files like abc.com.py.jsonl
+        fineweb_path = os.path.join(data_dir, "url_fineweb2", f"{domain}.csv")
+        if os.path.exists(fineweb_path):
+            return fineweb_path
+
+        try:
+            self.logger.info(
+                "No se encontró archivo CSV para el dominio '%s' en la ruta %s",
+                domain,
+                fineweb_path,
+            )
+        except Exception:
+            # Si el logger no está disponible, ignorar
+            pass
+
+        return False
+
+    def _url_already_scraped(self, url: str) -> bool:
+        """Check whether a URL is already present in the domain jsonl file.
+
+        Returns True if the domain file exists and contains a record whose 'url'
+        field equals the provided URL. If the file doesn't exist, returns False.
+        """
+        parsed = urlparse(url)
+        domain = parsed.netloc.lower().lstrip("www.")
+        path = self._domain_csv_path(domain)
+
+        if not os.path.exists(path):
+            return False
+
+        try:
+            with open(path, "r", encoding="utf-8") as fh:
+                reader = csv.DictReader(fh)  # usa la cabecera como keys
+                for row in reader:
+                    if row.get("url") == url:
+                        return True
+            return False
+        except Exception as e:
+            # Si hay error de IO o formato, no lo tratamos como ya scrapeado
+            self.logger.warning(f"Error leyendo {path}: {e}")
+            return False
+
 
     def parse_item(self, response):
         """
@@ -112,6 +171,15 @@ class GuaraniSpider(CrawlSpider):
             GuaraniWord: Items containing Guarani words along with metadata
                          such as the source URL and domain
         """
+        # If this URL was already scraped (exists in domain jsonl), skip processing
+        try:
+            if self._url_already_scraped(response.url):
+                self.logger.info("parse_item: skipping already-scraped response %s", response.url)
+                return
+        except Exception:
+            # If any error occurs while checking, continue processing as before
+            self.logger.debug("parse_item: error checking scraped state for %s", response.url, exc_info=True)
+
         text_chunks = response.xpath('''
             //body//*[not(
                 self::script or
@@ -136,7 +204,7 @@ class GuaraniSpider(CrawlSpider):
 
         for chunk in text_chunks:
             chunk = chunk.strip()
-            if len(chunk) < 100 or not chunk:  # Skip short chunks
+            if len(chunk.split()) < 4 or not chunk:  # Skip short chunks
                 continue
             yield GuaraniWord(
                 word=chunk,
