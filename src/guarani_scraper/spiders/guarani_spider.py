@@ -100,7 +100,7 @@ class GuaraniSpider(CrawlSpider):
             async for req in super().start():
                 yield req
 
-    def _domain_csv_path(self, domain: str) -> str:
+    def _domain_csv_path(self, domain: str) -> str | None:
         """Return the expected jsonl path for a domain inside the top-level data/ dir.
 
         Normalizes 'www.' prefix away. Example: 'abc.com.py' -> 'data/abc.com/abc.com.csv'
@@ -114,17 +114,12 @@ class GuaraniSpider(CrawlSpider):
         if os.path.exists(fineweb_path):
             return fineweb_path
 
-        try:
-            self.logger.info(
-                "No se encontró archivo CSV para el dominio '%s' en la ruta %s",
-                domain,
-                fineweb_path,
-            )
-        except Exception:
-            # Si el logger no está disponible, ignorar
-            pass
-
-        return False
+        # self.logger.info(
+        #     "No se encontró archivo CSV para el dominio '%s' en la ruta %s",
+        #     domain,
+        #     fineweb_path,
+        # )
+        return None
 
     def _url_already_scraped(self, url: str) -> bool:
         """Check whether a URL is already present in the domain jsonl file.
@@ -136,7 +131,7 @@ class GuaraniSpider(CrawlSpider):
         domain = parsed.netloc.lower().lstrip("www.")
         path = self._domain_csv_path(domain)
 
-        if not os.path.exists(path):
+        if not path or not os.path.exists(path):
             return False
 
         try:
