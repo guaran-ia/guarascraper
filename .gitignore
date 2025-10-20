@@ -132,6 +132,7 @@ celerybeat.pid
 .env
 .venv/
 env/
+guarascraper-venv/
 venv/
 ENV/
 env.bak/
@@ -181,3 +182,4 @@ test*
 corpus/
 data/web_sources.csv
 .vscode/launch.json
+logs/

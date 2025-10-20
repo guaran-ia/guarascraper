@@ -45,7 +45,7 @@ class GuaraniScraperPipeline:
         clean_domain = self.get_clean_domain(url)
 
         # Create domain directory
-        domain_dir = os.path.join(self.corpus_dir, clean_domain)
+        domain_dir = os.path.join(self.corpus_dir, 'download')
         os.makedirs(domain_dir, exist_ok=True)
 
         # Create file path for the JSONL file
