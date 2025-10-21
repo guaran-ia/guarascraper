@@ -1,10 +1,12 @@
 import csv
+from urllib import response
 from urllib.parse import urlparse
 from scrapy.spiders import CrawlSpider, Rule
 from scrapy.linkextractors import LinkExtractor
 from scrapy import Request
 from ..utils.lang_detector import GuaraniDetector
 from ..items import GuaraniWord
+from furl import furl
 import os
 import json
 
@@ -75,6 +77,14 @@ class GuaraniSpider(CrawlSpider):
                     follow=True,
                 ),
             )
+            # self.rules = (
+            #     Rule(
+            #         # Only follow links whose path contains /gn/ (efficient: avoids downloads outside /gn/)
+            #         LinkExtractor(allow=(r'/gn(/|$)',), allow_domains=self.allowed_domains),
+            #         callback="parse_item",
+            #         follow=True,
+            #     ),
+            # )
             self.single_page_only = False
 
         super()._compile_rules()
@@ -130,15 +140,30 @@ class GuaraniSpider(CrawlSpider):
         parsed = urlparse(url)
         domain = parsed.netloc.lower().lstrip("www.")
         path = self._domain_csv_path(domain)
+        workspace_root = os.path.abspath(os.path.join(os.path.dirname(__file__), "..", "..", ".."))
 
         if not path or not os.path.exists(path):
-            return False
+            # If the domain-specific CSV file path is missing or doesn't exist,
+            # try to use the fallback file "others_url_fineweb2.csv" instead.
+            fallback_path = "data/url_fineweb2/others_url_fineweb2.csv"
+            data_dir = os.path.join(workspace_root, fallback_path)
+
+            # Check if the fallback file exists
+            if os.path.exists(data_dir):
+                # If it exists, return its path  
+                path = data_dir
+            else:
+                # If neither the domain CSV nor the fallback file exist, return False
+                return False
+
 
         try:
             with open(path, "r", encoding="utf-8") as fh:
                 reader = csv.DictReader(fh)  # usa la cabecera como keys
                 for row in reader:
-                    if row.get("url") == url:
+                    url1 = furl(url)
+                    url2 = furl(row.get("url"))
+                    if (url1.host, url1.path, url1.query.params) == (url2.host, url2.path, url2.query.params):
                         return True
             return False
         except Exception as e:
@@ -201,40 +226,50 @@ class GuaraniSpider(CrawlSpider):
             chunk = chunk.strip()
             if len(chunk.split()) < 4 or not chunk:  # Skip short chunks
                 continue
-            yield GuaraniWord(
-                word=chunk,
-                url=response.url,
-                domain=urlparse(response.url).netloc,
-            )
-            
-            # # Check if this chunk is Guarani
-            # if self.detector.is_guarani(chunk):
-            #     print("DEBUG: Found Guarani chunk")
-            #     # Now extract words from this Guarani chunk
-            #     words = [w.strip() for w in chunk.split() if w.strip()]
-            #     for word in words:
-            #         # Additional filtering if needed
-            #         if len(word) > 2:  # Skip very short words
-            #             words_found += 1
-            #             yield GuaraniWord(
-            #                 word=word,
-            #                 url=response.url,
-            #                 domain=urlparse(response.url).netloc,
-            #             )
+            # yield GuaraniWord(
+            #     word=chunk,
+            #     url=response.url,
+            #     domain=urlparse(response.url).netloc,
+            # )
+
+            # Check if this chunk is Guarani
+            if self.detector.is_guarani(chunk):
+                yield GuaraniWord(
+                    word=chunk,
+                    url=response.url,
+                    domain=urlparse(response.url).netloc,
+                )
+                print("DEBUG: Found Guarani chunk")
+                # Now extract words from this Guarani chunk
+                # words = [w.strip() for w in chunk.split() if w.strip()]
+                # for word in words:
+                #     # Additional filtering if needed
+                #     if len(word) > 2:  # Skip very short words
+                #         words_found += 1
+                #         yield GuaraniWord(
+                #             word=word,
+                #             url=response.url,
+                #             domain=urlparse(response.url).netloc,
+                #         )
 
             # else:
             #     # Check individual words using NLTK directly
+                
+
+
             #     words = [w.strip() for w in chunk.split() if w.strip()]
             #     for word in words:
             #         if len(word) > 2 and self.detector._nltk_guarani_check(word):  # Usar NLTK directamente
             #             words_found += 1
             #             print(f"DEBUG: Found individual Guarani word: '{word}'")
-            #             yield GuaraniWord(
-            #                 word=word,
-            #                 url=response.url,
-            #                 domain=urlparse(response.url).netloc,
-            #             )
+            #     if words_found >= len(words) * 0.6:
+            #         print(f"DEBUG: Chunk majority Guarani (>60%), saving: '{chunk}'")
+            #         yield GuaraniWord(
+            #             word=chunk,  # guardamos todo el chunk
+            #             url=response.url,
+            #             domain=urlparse(response.url).netloc,
+            #         )
         
-        # if words_found > 0:
-        #     print(f"DEBUG: Total words found in chunk: {words_found}")
+        if words_found > 0:
+            print(f"DEBUG: Total words found in chunk: {words_found}")
     
