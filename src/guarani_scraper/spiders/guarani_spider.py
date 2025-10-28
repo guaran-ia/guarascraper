@@ -4,7 +4,9 @@ from urllib.parse import urlparse
 from scrapy.spiders import CrawlSpider, Rule
 from scrapy.linkextractors import LinkExtractor
 from scrapy import Request
-from ..utils.lang_detector import GuaraniDetector
+# from ..utils.lang_detector import GuaraniDetector
+from  corpus.src.pipeline.language_identifier.language_identifier import LanguageIdentifier
+
 from ..items import GuaraniWord
 from furl import furl
 import os
@@ -34,7 +36,9 @@ class GuaraniSpider(CrawlSpider):
         crawl_domain = kwargs.pop("crawl_domain", False)
 
         super(GuaraniSpider, self).__init__(*args, **kwargs)
-        self.detector = GuaraniDetector()
+        self.detector = LanguageIdentifier(glotlid=True, fasttext=True, openlid=True)
+
+
 
         # Read URLs from CSV
         if csv_file:
@@ -223,7 +227,8 @@ class GuaraniSpider(CrawlSpider):
         words_found = 0
 
         for chunk in text_chunks:
-            chunk = chunk.strip()
+            # chunk = chunk.strip()
+            chunk = chunk.replace('\n', ' ').replace('\r', ' ').strip()
             if len(chunk.split()) < 4 or not chunk:  # Skip short chunks
                 continue
             # yield GuaraniWord(
@@ -233,13 +238,24 @@ class GuaraniSpider(CrawlSpider):
             # )
 
             # Check if this chunk is Guarani
-            if self.detector.is_guarani(chunk):
+            result = self.detector.identify_languages(chunk, k=1, raw_output=False)
+            # lang_code, confidence = result['languages'][0]  # <--- usar [0]
+
+            if result['languages'][0] == 'grn':
                 yield GuaraniWord(
                     word=chunk,
                     url=response.url,
                     domain=urlparse(response.url).netloc,
                 )
-                print("DEBUG: Found Guarani chunk")
+                print(f"DEBUG: Found Guarani chunk with confidence {result['languages'][1]}: '{chunk}'")
+
+            # if self.detector.is_guarani(chunk):
+            #     yield GuaraniWord(
+            #         word=chunk,
+            #         url=response.url,
+            #         domain=urlparse(response.url).netloc,
+            #     )
+            #     print("DEBUG: Found Guarani chunk")
                 # Now extract words from this Guarani chunk
                 # words = [w.strip() for w in chunk.split() if w.strip()]
                 # for word in words:
