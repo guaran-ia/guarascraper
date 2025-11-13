@@ -6,139 +6,97 @@
 
 # useful for handling different item types with a single interface
 import os
-import re
 import json
-from urllib.parse import urlparse, parse_qs
+from datetime import datetime
+from urllib.parse import urlparse
 from itemadapter import ItemAdapter
 
 
 class GuaraniScraperPipeline:
     """
-    Pipeline for processing and storing scraped Guarani words.
+    Pipeline for processing and storing scraped content.
 
-    Words are saved to text files organized by domain and page:
-    corpus/domain_name/page_path.txt
+    Each domain's content is saved to a JSONL file with fields:
+    - text: The concatenated scraped content of the page.
+    - date: The timestamp when the page was scraped.
+    - url: The URL of the page.
     """
 
     def __init__(self):
         """Initialize the pipeline."""
         self.files = {}
-        self.domain_metadata = {}
-        # Use absolute path to ensure consistency
-        self.corpus_dir = os.path.join(os.path.dirname(os.path.dirname(__file__)), "..", "corpus")
+        self.corpus_dir = os.path.join(os.path.dirname(os.path.dirname(__file__)), "..", "data")
         os.makedirs(self.corpus_dir, exist_ok=True)
 
     def get_clean_domain(self, url):
         """Extract clean domain name without TLD extensions."""
         domain = urlparse(url).netloc
-
-        # Remove common prefixes
-        if domain.startswith("www."):
-            domain = domain[4:]
-
-        # Remove top level domain extensions
-        domain = re.sub(r"\.(com|org|edu|gov|py|blogspot\.com)$", "", domain)
-
-        return domain
-    
-    def get_original_domain(self, url):
-        """Get the original domain with TLD for metadata."""
-        domain = urlparse(url).netloc
-        # Remove www but keep TLD
         if domain.startswith("www."):
             domain = domain[4:]
         return domain
-
-    def get_clean_path(self, url):
-        """Convert URL path to clean filename."""
-        parsed = urlparse(url)
-        path = parsed.path
-        query = parsed.query
-
-        # Handle root path
-        if not path or path == "/":
-            filename = "index"
-        else:
-            # Remove leading/trailing slashes and replace separators
-            filename = path.strip("/").replace("/", "_")
-            # Remove file extensions
-            filename = re.sub(r"\.(html|php|htm)$", "", filename)
-
-        # Handle query parameters
-        if query:
-            query_parts = []
-            params = parse_qs(query)
-            for key, values in params.items():
-                for value in values:
-                    query_parts.append(f"{key}_{value}")
-            if query_parts:
-                filename += "_" + "_".join(query_parts)
-
-        # Clean filename - only alphanumeric, underscore, hyphen
-        filename = re.sub(r"[^\w\-_]", "_", filename)
-        # Remove multiple consecutive underscores
-        filename = re.sub(r"_+", "_", filename)
-        # Remove leading/trailing underscores
-        filename = filename.strip("_")
-
-        return filename + ".txt"
 
     def process_item(self, item, spider):
-        """Process a GuaraniWord item by writing it to the appropriate file."""
+        """Process an item by appending a new line for each scraped item."""
         adapter = ItemAdapter(item)
 
-        # Get clean domain and original domain
-        clean_domain = self.get_clean_domain(adapter["url"])
-        original_domain = self.get_original_domain(adapter["url"])
-        filename = self.get_clean_path(adapter["url"])
+        # Get the URL and clean domain
+        url = adapter["url"]
+        text = adapter["word"]
+        clean_domain = self.get_clean_domain(url)
 
         # Create domain directory
-        domain_dir = os.path.join(self.corpus_dir, clean_domain)
+        domain_dir = os.path.join(self.corpus_dir, 'download')
         os.makedirs(domain_dir, exist_ok=True)
 
-        # Create file path
-        file_path = os.path.join(domain_dir, filename)
+        # Create file path for the JSONL file
+        file_path = os.path.join(domain_dir, f"{clean_domain}.jsonl")
 
-        # Open file if not already open
-        if file_path not in self.files:
-            self.files[file_path] = open(file_path, "w", encoding="utf-8")
+        # If file exists and contains the URL, merge by concatenating text
+        if os.path.exists(file_path):
+            merged = False
+            out_lines = []
+            with open(file_path, "r", encoding="utf-8") as rf:
+                for line in rf:
+                    line = line.strip()
+                    if not line:
+                        continue
+                    try:
+                        obj = json.loads(line)
+                    except Exception:
+                        out_lines.append(line)
+                        continue
 
-        # Write word to file
-        self.files[file_path].write(adapter["word"] + "\n")
-        self.files[file_path].flush()
+                    if obj.get("url") == url:
+                        # concatenate texts
+                        existing = obj.get("text", "")
+                        combined = "\n".join([p for p in [existing, text] if p])
+                        obj["text"] = combined
+                        obj["date"] = datetime.utcnow().isoformat()
+                        out_lines.append(json.dumps(obj, ensure_ascii=False))
+                        merged = True
+                    else:
+                        out_lines.append(json.dumps(obj, ensure_ascii=False))
 
-        # Track metadata for JSON
-        if clean_domain not in self.domain_metadata:
-            self.domain_metadata[clean_domain] = []
+            if not merged:
+                # append new record
+                record = {"text": text, "date": datetime.utcnow().isoformat(), "url": url}
+                out_lines.append(json.dumps(record, ensure_ascii=False))
 
-        # Create metadata entry for this page
-        page_metadata = {
-            'dominio': original_domain,
-            'web_page_url': adapter["url"],
-            'file_web_page_content': f'corpus/{clean_domain}/{filename}'
-        }
-
-        # Check if this page is already in metadata (avoid duplicates)
-        existing_entry = next((entry for entry in self.domain_metadata[clean_domain] 
-                              if entry['web_page_url'] == adapter["url"]), None)
-        
-        if not existing_entry:
-            self.domain_metadata[clean_domain].append(page_metadata)
+            # write atomically
+            tmp_path = file_path + ".tmp"
+            with open(tmp_path, "w", encoding="utf-8") as wf:
+                for l in out_lines:
+                    wf.write(l + "\n")
+            os.replace(tmp_path, file_path)
+        else:
+            # Create a new entry for the URL and append
+            record = {"text": text, "date": datetime.utcnow().isoformat(), "url": url}
+            with open(file_path, "a", encoding="utf-8") as f:
+                f.write(json.dumps(record, ensure_ascii=False) + "\n")
 
         return item
 
     def close_spider(self, spider):
-        """Close all open files and create JSON metadata files when spider finishes."""
-        # Close all text files
+        """Close all open files when spider finishes."""
         for file_handle in self.files.values():
             file_handle.close()
-
-        # Create JSON files for each domain
-        for clean_domain, metadata_list in self.domain_metadata.items():
-            domain_dir = os.path.join(self.corpus_dir, clean_domain)
-            json_file_path = os.path.join(domain_dir, f"{clean_domain}.json")
-            
-            with open(json_file_path, 'w', encoding='utf-8') as json_file:
-                json.dump(metadata_list, json_file, indent=4, ensure_ascii=False)
-            
-            spider.logger.info(f"Created metadata file: {json_file_path} with {len(metadata_list)} pages")

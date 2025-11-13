@@ -84,7 +84,7 @@ class GuaraniDetector:
             print(f"FastText detection error: {e}")
 
         # Polyglot vote
-        if len(cleaned_text) >= 100:  
+        if len(cleaned_text.split()) >= 3:  
             try:
                 detector = Detector(cleaned_text)
                 print(f"DEBUG: Polyglot detected '{detector.language.code}' with confidence {detector.language.confidence}")
@@ -136,7 +136,9 @@ class GuaraniDetector:
         try:
             # Custom tokenization that preserves Guarani words
             cleaned_for_tokens = text.lower()
+            cleaned_for_tokens = re.sub(r"[’‘`´]", "'", cleaned_for_tokens)
             cleaned_for_tokens = re.sub(r'[^\w\sñáéíóúãẽĩõũỹ\']', ' ', cleaned_for_tokens)
+
             tokens = [token.strip() for token in cleaned_for_tokens.split() if token.strip()]
             
             if len(tokens) == 0:
@@ -183,7 +185,7 @@ class GuaraniDetector:
                     re.search(r'[ãẽĩõũỹ]', word) or  # Nasal vowels
                     "'" in word or                    # Apostrophe
                     word in self.guarani_stopwords or # Known Guarani
-                    re.search(r'(kue|gua|va.e|rã|ngo|piko|hague|rangue)$', word) or  # Guarani morphemes
+                    re.search(r'(kue|gua|rã|ngo|piko|hague|rangue)$', word) or  # Guarani morphemes
                     re.search(r'^(ñe|ño|ñu|nd|mb|ng)', word)  # Guarani prefixes
                 )
                 
