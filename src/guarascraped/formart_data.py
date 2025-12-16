@@ -182,7 +182,7 @@ def main():
                     num_chars = len(clean_text)
 
                     lang_info = identify_language(clean_text)
-                    if lang_info:
+                    if lang_info and lang_info["score"] >= 0.70:
                         lang = lang_info["lang"]
                         lang_score = lang_info["score"]
                         lang_src = lang_info["source_score"]
