@@ -1,0 +1,1 @@
+{"text": "{ $count ->         [one] ¿Emboguete { $count } rembiapo ñepyrũ opaite mba’e’okágui?        *[other] ¿Emboguete umi { $count } rembiapo ñepyrũ opaite mba’e’okágui?     }", "date": "2025-11-18T03:53:49.388901", "url": "https://transvision.mozfr.org/string/?entity=browser/browser/aboutLogins.ftl:about-logins-confirm-remove-all-sync-dialog-title&repo=gecko_strings"}
