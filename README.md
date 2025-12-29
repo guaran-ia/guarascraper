@@ -1,33 +1,73 @@
-# Guarascraper
+# 🕷️ GuaraScraper
 
-Web scraper application for online Guarani text developed under the GuaranIA project as part of the initiative UCA Autumn of Code 2025.
+**GuaraScraper** is an **automated web crawler** designed to traverse public websites and **extract textual content that potentially contains Guarani language**.  
+The scraper is intended for **systematic data collection** to support linguistic corpus construction and subsequent analysis.
 
 ---
 
+## 🧠 Overview
 
-# Websites in Guarani
+- **Type:** Web crawler / Data scraper  
+- **Primary purpose:** Public web content collection  
+- **Target language:** Guarani  
+- **Implementation:** Python + Scrapy  
+- **Output:** Structured text data (`.jsonl`)
 
-Manually identified websites that contain text in Guarani
+---
 
-- [Secretaría Nacional de Cultura Paraguay](https://cultura.gov.py/): part of paraguayan goverment sites
-- [Secreataria de Politica Linguistica](https://spl.gov.py/gn/): part of paraguayan goverment sites
-- [ABC Color](https://www.abc.com.py/): paraguayan newspaper
-- [Facultad de humanidades, ciencias sociales y cultura guaraní](https://humanidades.uni.edu.py/nane-nee-guarani-ara/): paraguayan university
-- [Yvy Marãe'ỹ](https://yvymaraey.edu.py/): institute for culturarl studies
-- [Misa Guarani](https://misaguarani.com/): church readings
-- [Portal Guarani](https://www.portalguarani.com/): history and culture of paraguay
-- [Guarani Raity](https://www.guarani-raity.com.py/index.html): some sort of guarani library
-- [Vikipetã](https://gn.wikipedia.org/wiki/Kuatia_%C3%91epyr%C5%A9ha): wikipedia in guarani
-- [jw.org](https://www.jw.org/gug/): jehovah witnesses site
-- [Ultima hora](https://www.ultimahora.com/): paraguayan newspaper 
-- [Ñane Ñe'ẽ Guarani](https://guaraniete.blogspot.com/): blog about guarani
-- [GuaraniMeme](https://guaranimeme.blogspot.com/): blog about guarani
-- [lenguagurani](https://lenguaguarani.blogspot.com/): blog about guarani
-- [Constitución](https://guaraniayvu.org/Constitution): paraguayan constitution in guarani
-- [Guarani Renda](https://guaranirenda.tripod.com/index_ovetanda.htm): bilingual site
-- [Sociedad Biblica Paraguay](https://guarani.global.bible/bible/c6d3311681a81388-01/MAT.1): biblical passages
-- [Ministerio de Economia y Finanzas Paraguay](https://www.stp.gov.py/v1/?s=%C3%91e%C2%B4%C3%AA+): articles in guarani from a part of paraguayan goverment site
+## 🌐 Crawling behavior
 
+GuaraScraper:
+- accesses only publicly available web content  
+- starts crawling from predefined URLs or domains  
+- follows internal links in a controlled manner  
+- downloads HTML pages  
+- extracts relevant textual content  
+- stores results in a structured format  
+
+---
+
+## 🤖 User-Agent
+
+GuaraScraper uses the following User-Agent for HTTP requests:
+
+```
+Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/136.0.0.0 Safari/537.36
+```
+
+This User-Agent is defined in the scraper configuration and can be modified if needed.
+
+---
+
+## 🛡️ robots.txt
+
+GuaraScraper respects the `robots.txt` protocol using Scrapy’s native support.
+
+Configuration:
+
+```
+ROBOTSTXT_OBEY = True
+```
+
+This ensures that the crawler respects disallowed paths and directives such as `Crawl-delay`.
+
+---
+
+## 📦 Data collection
+
+Collected data is stored in `.jsonl` format under the following directory:
+
+```
+data/download/
+└── domain-name.jsonl
+```
+
+Each record includes:
+- extracted text  
+- source URL  
+- extraction date  
+
+---
 
 # Installation
 
@@ -37,92 +77,77 @@ Manually identified websites that contain text in Guarani
 
 ## Setup Instructions
 
-1. **Clone the repository**:
+1. **Clone the repository**
    ```bash
    git clone https://github.com/guaran-ia/guarascrapper
    cd guarascrapper
    ```
 
-2. **Create and activate a virtual environment** (recommended):
+2. **Create and activate a virtual environment** (recommended)
    ```bash
    python3 -m venv venv
-   
+
    # On Windows
    venv\Scripts\activate
-   
+
    # On macOS/Linux
    source venv/bin/activate
    ```
 
-   3. **Install dependencies**:
+3. **Install dependencies**
    ```bash
-    pip3 install -r requirements.txt
+   pip3 install -r requirements.txt
    ```
 
-   4. **Download the FastText language identification model**:
-
+4. **Clone the language identifier repository**
    ```bash
-   mkdir -p src/guarani_scraper/utils/lang_model
-
-   curl https://dl.fbaipublicfiles.com/fasttext/supervised-models/lid.176.bin -o src/guarani_scraper/utils/lang_model/lid.176.bin
+   # clone without blobs and without checking out files
+   git clone --filter=blob:none --no-checkout https://github.com/guaran-ia/corpus.git
+   cd corpus
+   # initialize sparse-checkout and enable 'cone' mode
+   git sparse-checkout init --cone
+   # set the language identifier path
+   git sparse-checkout set src/pipeline/language_identifier
+   # check out the main branch
+   git checkout main
    ```
 
-## Usage
+---
 
-### Basic Usage
+## ▶️ Usage
 
-**Option 1: Scrape from CSV file**
-To run the scraper using the included list of Guarani websites:
+GuaraScraper can be executed in different ways depending on the desired scraping scope.
 
-```bash
-python3 cli.py --csv data/web_sources.csv
+### 1️⃣ Scrape a single page
+Scrapes only the specified URL, without following additional links:
+
 ```
-
-**Option 2: Scrape a single URL**
-To scrape a specific website:
-
-```bash
 python3 cli.py --url https://guaranimeme.blogspot.com
 ```
 
-The scraped Guarani text is saved in the `corpus` directory.
+### 2️⃣ Scrape an entire domain
+Scrapes the initial URL and traverses the entire domain, following internal links in a controlled manner:
 
-## Configuration
+```
+python3 cli.py --url https://guaranimeme.blogspot.com --crawl-domain
+```
 
-You can modify the following files to adjust the scraper's behavior:
+### 3️⃣ Scrape a set of pages from a CSV file
+Scrapes only the URLs listed in a CSV file, without crawling full domains:
 
-- **`src/guarani_scraper/settings.py`**: Adjust crawling settings like delay, throttling, and user agent
-- **`src/guarani_scraper/guarani_scraper/utils/lang_detector.py`**: Fine-tune the language detection logic
-- **`data/web_sources.csv`**: Add or remove websites to be scraped
+```
+python3 cli.py --csv data/web_sources.csv
+```
 
-## Acknowledgement
+### 4️⃣ Scrape a set of domains from a CSV file
+Scrapes all domains defined in the CSV file, fully crawling each site:
 
-The scraper proved to work correctly on the following identified websites
+```
+python3 cli.py --csv data/web_sources.csv --crawl-domain
+```
 
-- [GuaraniMeme](https://guaranimeme.blogspot.com/): blog about guarani  
-- [Portal Guarani](https://www.portalguarani.com/): history and culture of paraguay  
-- [Facultad de humanidades, ciencias sociales y cultura guaraní](https://humanidades.uni.edu.py/nane-nee-guarani-ara/): paraguayan university  
-- [Guarani Raity](https://www.guarani-raity.com.py/index.html): some sort of guarani library  
-- [Constitución](https://guaraniayvu.org/Constitution): paraguayan constitution in guarani  
-- [Vikipetã](https://gn.wikipedia.org/wiki/Kuatia_%C3%91epyr%C5%A9ha): wikipedia in guarani  
-- [Agencia de Información Paraguaya](https://www.ip.gov.py/ip/en-guarani/): paraguayan information agency  
-- [jw.org](https://www.jw.org/gug/): jehovah witnesses site  
-- [Secretaría de Políticas Linguisticas Paraguay](https://spl.gov.py/gn/): part of paraguayan goverment sites  
-- [Secretaría Nacional de Cultura Paraguay](https://cultura.gov.py/): part of paraguayan goverment sites  
-- [Yvy Marãe'ỹ](https://yvymaraey.edu.py/): institute for cultural studies  
+### 📂 Data output
 
-Additional work is required to have the application correctly scrape the following identified sites
+Extracted text is saved in the corresponding directory (e.g. `data/download/`) in structured `.jsonl` format, along with metadata such as the source URL and domain.
 
-- [ABC](https://www.abc.com.py/): paraguayan newspaper  
-- [Misa Guarani](https://misaguarani.com/): church readings  
-- [Ultima hora](https://www.ultimahora.com/): paraguayan newspaper
-
-The following identified websites have not been tested yet
-
-- [Ñane Ñe'ẽ Guarani](https://guaraniete.blogspot.com/): blog about guarani  
-- [lenguagurani](https://lenguaguarani.blogspot.com/): blog about guarani  
-- [Ñe'ẽ](https://revistanee.com.py/index.php/nee/index): journal of linguistic and cultural research  
-- [Guarani Renda](https://guaranirenda.tripod.com/index_ovetanda.htm): bilingual site  
-- [Sociedad Biblica Paraguay](https://guarani.global.bible/bible/c6d3311681a81388-01/MAT.1): biblical passages  
-- [Ministerio de Economia y Finanzas Paraguay](https://www.stp.gov.py/v1/?s=%C3%91e%C2%B4%C3%AA+): articles in guarani from a part of paraguayan goverment site  
-
+---
