@@ -6,27 +6,22 @@ This document describes the processing procedure applied to data obtained throug
 
 ## 🧩 Processing Pipeline (Normalization + Report Generation)
 
-The raw scraping output was **normalized and analyzed** using a processing
-pipeline based on the methodology of the  
-[**Existing Guarani Corpora**](https://github.com/guaran-ia/existing-guarani-corpora) project.
+The raw scraping output was normalized and analyzed using a processing methodology implemented in  
+[existing-guarani-corpora](https://github.com/guaran-ia/existing-guarani-corpora).
 
-The processing pipeline includes:
+The processing pipeline performs the following steps:
 
-- document-level metadata normalization
-- character and word counts using `split()` and spaCy
-- language identification and scoring
-- consistent `.jsonl` output format
-- generation of aggregated dataset statistics
+- **Document-level metadata normalization:** ensures that all documents have a consistent structure, including fields such as **source**, **url**, **text**, and other relevant metadata.  
+- **Character and word counts:** calculated using Python’s `split()` and spaCy.  
+- **Language identification and scoring:** each document is analyzed with the [Language Identifier Tool](https://github.com/guaran-ia/corpus/tree/main/src/pipeline/language_identifier) to detect its language and compute a `language_score` representing how confidently the model identifies Guaraní words in the document.
+- **Consistent `.jsonl` format:** ensures all documents are saved in a standardized structure.  
+- **Aggregated dataset statistics:** provides overall summaries, including the total number of documents, total words, the average proportion of Guaraní words, among others.
 
-The processed outputs are stored in:
+All processed outputs are stored in:
 
 ```
 data/processed/
 ```
-
-Additionally, the **Language Identifier Tool** from:  
-https://github.com/guaran-ia/corpus/tree/main/src/pipeline/language_identifier  
-was used to compute the `language_score` for each document.
 
 ------------------------------------------------------------------------
 
@@ -104,29 +99,20 @@ data/processed/all_domains_report.json
 ## 📊 General Dataset Statistics
 
 All statistics below are derived from  
-`data/processed/all_domains_report.json`.
+```
+data/processed/all_domains_report.json.
+```
 
-### 📌 Documents
+- **Total number of documents:** 46,152
+- **Average language score:** 0.7805489521634437
+- **Average number of words using `split()`:** 179.2303692147686
+- **Average number of words using `spacy` with punctuation:** 214.09897729242502
+- **Average number of words using `spacy` without punctuation:** 177.9657869648119
+- **Total number of words using `split()`:** 8,271,840
+- **Total number of words using `spacy` with punctuation:** 9,881,096
+- **Total number of words using `spacy` without punctuation:** 8,213,477
+- **Average number of characters:** 1,239.9789824926331
+- **Total number of characters:** 57,227,510
 
-- **Total extracted documents:** 46,152
-
-### 📝 Words
-
-- **Total words (`split()`):** 8,271,840
-- **Total words (spaCy with punctuation):** 9,881,096
-- **Total words (spaCy without punctuation):** 8,213,477
-
-- **Average per document (`split()`):** 179.23
-- **Average per document (spaCy with punctuation):** 214.10
-- **Average per document (spaCy without punctuation):** 177.97
-
-### 🔤 Characters
-
-- **Total characters:** 57,227,510
-- **Average per document:** 1,239.98
-
-### 🏳️ Language
-
-- **Total language score:** 36,023.90
 
 ------------------------------------------------------------------------
