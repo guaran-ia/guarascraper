@@ -102,17 +102,18 @@ All statistics below are derived from
 ```
 data/processed/all_domains_report.json.
 ```
+<!-- STATS-START -->
 
-- **Total number of documents:** 46,152
-- **Average language score:** 0.7805489521634437
-- **Average number of words using `split()`:** 179.2303692147686
-- **Average number of words using `spacy` with punctuation:** 214.09897729242502
-- **Average number of words using `spacy` without punctuation:** 177.9657869648119
-- **Total number of words using `split()`:** 8,271,840
-- **Total number of words using `spacy` with punctuation:** 9,881,096
-- **Total number of words using `spacy` without punctuation:** 8,213,477
-- **Average number of characters:** 1,239.9789824926331
-- **Total number of characters:** 57,227,510
-
+- **Total number of documents:** 22,604
+- **Average language score:** 0.983707
+- **Average number of words using `split()`:** 192.78
+- **Average number of words using `spacy` with punctuation:** 231.84
+- **Average number of words using `spacy` without punctuation:** 192.69
+- **Total number of words using `split()`:** 4,357,570
+- **Total number of words using `spacy` with punctuation:** 5,240,594
+- **Total number of words using `spacy` without punctuation:** 4,355,494
+- **Average number of characters:** 1390.59,239.9789824926331
+- **Total number of characters:** 31,432,841
+<!-- STATS-END -->
 
 ------------------------------------------------------------------------
