@@ -50,7 +50,7 @@ From the project root:
 
 ```bash
 source guarascraper-venv/bin/activate
-python3 -m src.guarascraped.formart_data
+python3 -m src.processor.formart_data
 ```
 
 All dependencies (spaCy models, language identifier models, etc.) must be
@@ -102,17 +102,18 @@ All statistics below are derived from
 ```
 data/processed/all_domains_report.json.
 ```
+<!-- STATS-START -->
 
-- **Total number of documents:** 46,152
-- **Average language score:** 0.7805489521634437
-- **Average number of words using `split()`:** 179.2303692147686
-- **Average number of words using `spacy` with punctuation:** 214.09897729242502
-- **Average number of words using `spacy` without punctuation:** 177.9657869648119
-- **Total number of words using `split()`:** 8,271,840
-- **Total number of words using `spacy` with punctuation:** 9,881,096
-- **Total number of words using `spacy` without punctuation:** 8,213,477
-- **Average number of characters:** 1,239.9789824926331
-- **Total number of characters:** 57,227,510
-
+- **Total number of documents:** 43,160
+- **Average language score:** 0.904574
+- **Average number of words using `split()`:** 131.34
+- **Average number of words using `spacy` with punctuation:** 158.64
+- **Average number of words using `spacy` without punctuation:** 130.60
+- **Total number of words using `split()`:** 5,668,622
+- **Total number of words using `spacy` with punctuation:** 6,846,943
+- **Total number of words using `spacy` without punctuation:** 5,636,796
+- **Average number of characters:** 939.22,239.9789824926331
+- **Total number of characters:** 40,536,846
+<!-- STATS-END -->
 
 ------------------------------------------------------------------------
