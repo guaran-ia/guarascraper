@@ -50,7 +50,7 @@ From the project root:
 
 ```bash
 source guarascraper-venv/bin/activate
-python3 -m src.guarascraped.formart_data
+python3 -m src.processor.formart_data
 ```
 
 All dependencies (spaCy models, language identifier models, etc.) must be
@@ -104,16 +104,16 @@ data/processed/all_domains_report.json.
 ```
 <!-- STATS-START -->
 
-- **Total number of documents:** 22,604
-- **Average language score:** 0.983707
-- **Average number of words using `split()`:** 192.78
-- **Average number of words using `spacy` with punctuation:** 231.84
-- **Average number of words using `spacy` without punctuation:** 192.69
-- **Total number of words using `split()`:** 4,357,570
-- **Total number of words using `spacy` with punctuation:** 5,240,594
-- **Total number of words using `spacy` without punctuation:** 4,355,494
-- **Average number of characters:** 1390.59,239.9789824926331
-- **Total number of characters:** 31,432,841
+- **Total number of documents:** 43,160
+- **Average language score:** 0.904574
+- **Average number of words using `split()`:** 131.34
+- **Average number of words using `spacy` with punctuation:** 158.64
+- **Average number of words using `spacy` without punctuation:** 130.60
+- **Total number of words using `split()`:** 5,668,622
+- **Total number of words using `spacy` with punctuation:** 6,846,943
+- **Total number of words using `spacy` without punctuation:** 5,636,796
+- **Average number of characters:** 939.22,239.9789824926331
+- **Total number of characters:** 40,536,846
 <!-- STATS-END -->
 
 ------------------------------------------------------------------------

@@ -1,13 +1,13 @@
 {
-    "num_docs": 22604,
-    "num_words_split": 4357570,
-    "num_words_punct_spacy": 5240594,
-    "num_words_no_punct_spacy": 4355494,
-    "num_chars": 31432841,
-    "sum_lang_score": 22235.70221400261,
-    "avg_words_split": 192.77871173243673,
-    "avg_words_punct_spacy": 231.84365599009024,
-    "avg_words_no_punct_spacy": 192.6868695806052,
-    "avg_chars": 1390.5875508759511,
-    "avg_language_score": 0.9837065215892147
+    "num_docs": 43160,
+    "num_words_split": 5668622,
+    "num_words_punct_spacy": 6846943,
+    "num_words_no_punct_spacy": 5636796,
+    "num_chars": 40536846,
+    "sum_lang_score": 39041.39993541688,
+    "avg_words_split": 131.3397126969416,
+    "avg_words_punct_spacy": 158.6409406858202,
+    "avg_words_no_punct_spacy": 130.60231696014827,
+    "avg_chars": 939.2225671918443,
+    "avg_language_score": 0.9045736778363502
 }

@@ -4,7 +4,6 @@ import spacy
 from tqdm import tqdm
 from pathlib import Path
 from urllib.parse import urlparse
-import hashlib
 import re
 from src.corpus.src.pipeline.language_identifier.language_identifier import LanguageIdentifier
 
@@ -130,15 +129,6 @@ def identify_language(text: str, identifier, gn_code: str) -> dict | None:
         }
 
     return None
-def is_duplicate_text(text: str, seen_texts: set) -> bool:
-    """
-    Check if the given text is a duplicate.
-    A text is considered duplicate if it already exists in seen_texts.
-    """
-    if text in seen_texts:
-        return True
-    seen_texts.add(text)
-    return False
 
 
 # ============================
@@ -187,7 +177,6 @@ def main() -> None:
         return
 
     report = get_empty_report()
-    seen_hashes = set()
 
     with open(FINAL_JSONL, "w", encoding="utf-8") as outfile, \
          tqdm(total=total_docs, desc="Global progress", ncols=100) as bar:
@@ -218,9 +207,6 @@ def main() -> None:
                     if not clean_text:
                         continue
 
-                    if is_duplicate_text(clean_text, seen_hashes):
-                        continue
-
                     num_words_split = word_count_split(clean_text)
                     num_words_punct = word_count_spacy(clean_text, tokenizer, include_punct=True)
                     num_words_no_punct = word_count_spacy(clean_text, tokenizer, include_punct=False)
@@ -228,7 +214,7 @@ def main() -> None:
 
                     lang_info = identify_language(clean_text, identifier, GN_CODE)
 
-                    if lang_info and lang_info["score"] >= MIN_LANGUAGE_SCORE and lang_info['lang'] == GN_CODE:
+                    if lang_info  and lang_info['lang'] == GN_CODE:
                         lang = lang_info["lang"]
                         lang_score = lang_info["score"]
                         lang_src = lang_info["source_score"]
