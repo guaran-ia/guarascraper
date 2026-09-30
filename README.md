@@ -126,6 +126,32 @@ Each record includes:
 - source URL  
 - extraction date  
 
+### Previously collected pages and FineWeb2 exclusions
+
+Before scheduling a page, the scraper checks both:
+
+* FineWeb2 URL lists in `data/url_fineweb2/<domain>.csv` and
+  `data/url_fineweb2/others_url_fineweb2.csv`. Supply these optional lists with a
+  `url` column. Both files are checked even when a domain-specific file exists.
+* Previously saved page URLs in `data/download/<domain>.jsonl`.
+
+Domain filenames remove only the exact `www.` prefix. URL matching uses the
+hostname, path, and query parameters (independent of parameter order), ignoring
+the scheme and fragment as in the previous FineWeb2 check. Different query
+values remain distinct; `www.` and bare hostnames remain distinct URL identities
+even though they share a domain output file.
+
+Known pages are skipped in URL, CSV, and domain-crawl modes. Skipped pages are
+not downloaded for link discovery, so a known starting page or intermediate
+page cannot provide links to new pages. Supply unknown entry points when
+continuing a crawl. FineWeb2 lists are loaded lazily and cached for the run;
+downloaded JSONL state is checked again when responses are parsed.
+
+Missing state files provide no exclusions, and malformed URL records are
+ignored. The pipeline also preserves records that existed before it started
+writing to each domain file, preventing later runs from appending duplicate
+text. New chunks from the same page in the current run are still concatenated.
+
 ---
 
 # Installation

@@ -1,14 +1,11 @@
 import csv
-from urllib import response
 from urllib.parse import urlparse
 from scrapy.spiders import CrawlSpider, Rule
 from scrapy.linkextractors import LinkExtractor
 from scrapy import Request
 # from ..utils.lang_detector import GuaraniDetector
 from .items import GuaraniWord
-from furl import furl
-import os
-import json
+from .utils import crawl_state
 
 
 class GuaraniSpider(CrawlSpider):
@@ -37,6 +34,7 @@ class GuaraniSpider(CrawlSpider):
         from corpus.src.pipeline.language_identifier.language_identifier import LanguageIdentifier
 
         self.detector = LanguageIdentifier(glotlid=True, fasttext=True, openlid=True)
+        self._fineweb_urls = {}
 
 
 
@@ -79,6 +77,7 @@ class GuaraniSpider(CrawlSpider):
                     LinkExtractor(allow_domains=self.allowed_domains),
                     callback="parse_item",
                     follow=True,
+                    process_request="skip_known_request",
                 ),
             )
             # self.rules = (
@@ -101,82 +100,47 @@ class GuaraniSpider(CrawlSpider):
           produce the standard initial requests and enable rule-based crawling.
         """
         self.logger.debug("start: single_page_only=%s start_urls=%s", getattr(self, "single_page_only", False), getattr(self, "start_urls", None))
-        # Before scheduling requests, check if the URL has already been scraped
-        # by looking for a domain-specific jsonl file under the project's data/ directory.
+        # Exclude pages listed in FineWeb2 or our downloaded JSONL output.
         if getattr(self, "single_page_only", False):
             for url in getattr(self, "start_urls", []):
                 
                 if self._url_already_scraped(url):
-                    self.logger.info("Skipping already-scraped URL: %s", url)
+                    self.logger.info("Skipping known URL: %s", url)
                     continue  
                 yield Request(url, callback=self.parse_item, dont_filter=True)
         else:
             async for req in super().start():
-                yield req
+                if not self._url_already_scraped(req.url):
+                    yield req
+                else:
+                    self.logger.info("Skipping known URL: %s", req.url)
+
+    def skip_known_request(self, request, response):
+        """Exclude known pages before rule-based downloads are scheduled."""
+        if self._url_already_scraped(request.url):
+            self.logger.info("Skipping known URL: %s", request.url)
+            return None
+        return request
 
     def parse_start_url(self, response, **kwargs):
         """Extract the starting page while CrawlSpider handles link following."""
         yield from self.parse_item(response)
 
-    def _domain_csv_path(self, domain: str) -> str | None:
-        """Return the expected jsonl path for a domain inside the top-level data/ dir.
-
-        Normalizes 'www.' prefix away. Example: 'abc.com.py' -> 'data/abc.com/abc.com.csv'
-        """
-        domain = domain.lower().lstrip("www.")
-        workspace_root = os.path.abspath(os.path.join(os.path.dirname(__file__), "..", "..", ".."))
-        data_dir = os.path.join(workspace_root, "data")
-
-        # First check the url_fineweb2 folder where we store domain jsonl files like abc.com.py.jsonl
-        fineweb_path = os.path.join(data_dir, "url_fineweb2", f"{domain}.csv")
-        if os.path.exists(fineweb_path):
-            return fineweb_path
-
-        # self.logger.info(
-        #     "No se encontró archivo CSV para el dominio '%s' en la ruta %s",
-        #     domain,
-        #     fineweb_path,
-        # )
-        return None
-
     def _url_already_scraped(self, url: str) -> bool:
-        """Check whether a URL is already present in the domain jsonl file.
-
-        Returns True if the domain file exists and contains a record whose 'url'
-        field equals the provided URL. If the file doesn't exist, returns False.
-        """
-        parsed = urlparse(url)
-        domain = parsed.netloc.lower().lstrip("www.")
-        path = self._domain_csv_path(domain)
-        workspace_root = os.path.abspath(os.path.join(os.path.dirname(__file__), "..", "..", ".."))
-
-        if not path or not os.path.exists(path):
-            # If the domain-specific CSV file path is missing or doesn't exist,
-            # try to use the fallback file "others_url_fineweb2.csv" instead.
-            fallback_path = "data/url_fineweb2/others_url_fineweb2.csv"
-            data_dir = os.path.join(workspace_root, fallback_path)
-
-            # Check if the fallback file exists
-            if os.path.exists(data_dir):
-                # If it exists, return its path  
-                path = data_dir
-            else:
-                # If neither the domain CSV nor the fallback file exist, return False
-                return False
-
-
+        """Check both FineWeb2 URL lists and current downloaded JSONL output."""
         try:
-            with open(path, "r", encoding="utf-8") as fh:
-                reader = csv.DictReader(fh)  # usa la cabecera como keys
-                for row in reader:
-                    url1 = furl(url)
-                    url2 = furl(row.get("url"))
-                    if (url1.host, url1.path, url1.query.params) == (url2.host, url2.path, url2.query.params):
-                        return True
-            return False
-        except Exception as e:
-            # Si hay error de IO o formato, no lo tratamos como ya scrapeado
-            self.logger.warning(f"Error leyendo {path}: {e}")
+            key = crawl_state.url_key(url)
+            domain = crawl_state.clean_domain(url)
+            if domain not in self._fineweb_urls:
+                folder = crawl_state.DATA_DIR / "url_fineweb2"
+                self._fineweb_urls[domain] = (
+                    crawl_state.read_url_keys(folder / f"{domain}.csv", csv_file=True)
+                    | crawl_state.read_url_keys(folder / "others_url_fineweb2.csv", csv_file=True)
+                )
+            return (key in self._fineweb_urls[domain]
+                    or key in crawl_state.read_url_keys(crawl_state.download_path(url)))
+        except (OSError, ValueError) as e:
+            self.logger.warning("Error checking stored URL %s: %s", url, e)
             return False
 
 
@@ -199,10 +163,10 @@ class GuaraniSpider(CrawlSpider):
             GuaraniWord: Items containing Guarani words along with metadata
                          such as the source URL and domain
         """
-        # If this URL was already scraped (exists in domain jsonl), skip processing
+        # Recheck state in case this URL was saved after the request was scheduled.
         try:
             if self._url_already_scraped(response.url):
-                self.logger.info("parse_item: skipping already-scraped response %s", response.url)
+                self.logger.info("parse_item: skipping known response %s", response.url)
                 return
         except Exception:
             # If any error occurs while checking, continue processing as before
