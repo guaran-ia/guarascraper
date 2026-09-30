@@ -20,10 +20,55 @@ The scraper is intended for **systematic data collection** to support linguistic
 GuaraScraper:
 - accesses only publicly available web content  
 - starts crawling from predefined URLs or domains  
-- follows internal links in a controlled manner  
+- follows links within the input domains (including their subdomains) only
+  when `--crawl-domain` is supplied
 - downloads HTML pages  
 - extracts relevant textual content  
 - stores results in a structured format  
+
+Domain crawling is bounded by default; it does not guarantee a complete copy of
+a site. When a CSV supplies multiple domains, they share the same run-wide
+page and time limits, and links between those allowed domains can be followed.
+Pages are fetched before language identification, so requests are not restricted
+to Guarani-language pages. JavaScript is not executed, cookies are disabled, and
+automatic retries and HTTP/meta-refresh redirects are disabled.
+
+### Default crawl policy
+
+| Control | Default | CLI override |
+| --- | --- | --- |
+| Maximum link depth from a starting page (depth 0) | 3 | `--max-depth` |
+| Response-count shutdown threshold, across all domains | 500 | `--max-pages` |
+| Time before initiating shutdown after the spider opens | 600 seconds | `--timeout` |
+| Minimum delay between requests to the same domain | 2 seconds | `--download-delay` |
+| Concurrent requests per domain | 1 | Set in `src/scraper/settings.py` |
+| Concurrent requests across all domains | 8 | Set in `src/scraper/settings.py` |
+
+AutoThrottle starts with a 5-second delay, targets one concurrent request per
+domain, and adapts to response latency with a default maximum delay of 60
+seconds. The CLI raises that maximum if a larger download delay is requested.
+Delay randomization is disabled so the configured download delay is a
+floor. Page counts include responses even if no text is extracted, not the
+number of saved records. The page and time limits initiate graceful shutdown;
+already in-flight requests may finish, so neither is a strict final count or
+wall-clock deadline. Limits also apply in single-page/CSV page-list mode.
+
+For example, a smaller crawl with a slower request rate:
+
+```bash
+python cli.py --url https://guaranimeme.blogspot.com --crawl-domain \
+  --max-depth 2 --max-pages 100 --timeout 300 --download-delay 5
+```
+
+Setting `--max-depth`, `--max-pages`, or `--timeout` to `0` disables that
+individual limit. The effective identity, robots policy, limits, and throttling
+settings are logged at startup to `logs/scraper_errors.log` and the console.
+The file includes INFO-level policy messages despite its historical name.
+
+HTTP caching is enabled in `src/.scrapy/httpcache/` with no expiration by
+default. Cached responses can be reused on later runs, so a repeated crawl may
+not fetch fresh content. Change `HTTPCACHE_ENABLED` or `HTTPCACHE_EXPIRATION_SECS`
+in `src/scraper/settings.py` to adjust that behavior.
 
 ---
 
@@ -32,10 +77,12 @@ GuaraScraper:
 GuaraScraper uses the following User-Agent for HTTP requests:
 
 ```
-Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/136.0.0.0 Safari/537.36
+GuaraScraper (+https://github.com/guaran-ia/guarascraper)
 ```
 
-This User-Agent is defined in the scraper configuration and can be modified if needed.
+The project link provides identification and a contact route through GitHub
+issues. `USER_AGENT` is defined in `src/scraper/settings.py`; operators can add
+their own contact URL there while keeping the `GuaraScraper` product name.
 
 ---
 
@@ -47,9 +94,21 @@ Configuration:
 
 ```
 ROBOTSTXT_OBEY = True
+ROBOTSTXT_USER_AGENT = "GuaraScraper"
 ```
 
-This ensures that the crawler respects disallowed paths and directives such as `Crawl-delay`.
+Scrapy checks robots.txt access rules using the `GuaraScraper` product name,
+falling back to wildcard rules when no matching group exists. Site operators
+can block the crawler with:
+
+```text
+User-agent: GuaraScraper
+Disallow: /
+```
+
+Scrapy's native robots middleware does **not** apply the `Crawl-delay` directive.
+Request pacing is controlled by `DOWNLOAD_DELAY` and AutoThrottle; operators
+should set `--download-delay` to meet a site's published pacing requirements.
 
 ---
 
@@ -147,8 +206,9 @@ Scrapes only the specified URL, without following additional links:
 python3 cli.py --url https://guaranimeme.blogspot.com
 ```
 
-### 2️⃣ Scrape an entire domain
-Scrapes the initial URL and traverses the entire domain, following internal links in a controlled manner:
+### 2️⃣ Crawl a domain
+Starts at the specified URL and follows links within its domain, subject to
+robots.txt and the configured crawl limits:
 
 ```
 python3 cli.py --url https://guaranimeme.blogspot.com --crawl-domain
@@ -162,7 +222,8 @@ python3 cli.py --csv data/web_sources.csv
 ```
 
 ### 4️⃣ Scrape a set of domains from a CSV file
-Scrapes all domains defined in the CSV file, fully crawling each site:
+Follows links within domains defined in the CSV file, sharing the run's page
+and time limits:
 
 ```
 python3 cli.py --csv data/web_sources.csv --crawl-domain

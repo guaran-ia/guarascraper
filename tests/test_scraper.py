@@ -12,11 +12,16 @@ import unittest
 from unittest.mock import Mock, patch
 
 from scrapy.http import HtmlResponse
+from scrapy import Request
+from scrapy.downloadermiddlewares.useragent import UserAgentMiddleware
+from scrapy.robotstxt import ProtegoRobotParser
+from scrapy.settings import Settings
 from scrapy.spiderloader import SpiderLoader
 from scrapy.utils.misc import load_object
 from scrapy.utils.project import get_project_settings
 
 ROOT = Path(__file__).resolve().parents[1]
+sys.path.insert(0, str(ROOT))
 sys.path.insert(0, str(ROOT / "src"))
 
 from scraper.items import GuaraniWord
@@ -48,6 +53,68 @@ class ScraperTests(unittest.TestCase):
                     cwd=ROOT, capture_output=True, text=True,
                 )
                 self.assertEqual(result.returncode, 2, result.stderr)
+
+    def test_cli_rejects_invalid_limits(self):
+        for option, value in (
+            ("--max-depth", "-1"), ("--max-pages", "1.5"),
+            ("--timeout", "nan"), ("--timeout", "inf"),
+            ("--download-delay", "-2"),
+        ):
+            with self.subTest(option=option, value=value):
+                result = subprocess.run(
+                    [sys.executable, str(ROOT / "cli.py"), "--url", "https://example.org", option, value],
+                    cwd=ROOT, capture_output=True, text=True,
+                )
+                self.assertEqual(result.returncode, 2, result.stderr)
+
+    def test_cli_passes_crawl_limits_and_logs_effective_policy(self):
+        import cli
+
+        original_dir = os.getcwd()
+        for options, expected in (
+            ([], (3, 500, 600, 2)),
+            (["--max-depth", "2", "--max-pages", "100", "--timeout", "300", "--download-delay", "5"],
+             (2, 100, 300, 5)),
+            (["--max-depth", "0", "--max-pages", "0", "--timeout", "0"], (0, 0, 0, 2)),
+            (["--download-delay", "120"], (3, 500, 600, 120)),
+        ):
+            with self.subTest(options=options), \
+                    patch.dict(os.environ, {}, clear=True), \
+                    patch.object(sys, "argv", ["cli.py", "--url", "https://example.org", "--crawl-domain", *options]), \
+                    patch.object(cli, "CrawlerProcess") as process, \
+                    self.assertLogs("cli", level="INFO") as logs:
+                cli.main()
+                settings = process.call_args.args[0]
+                actual = tuple(settings.getfloat(key) for key in (
+                    "DEPTH_LIMIT", "CLOSESPIDER_PAGECOUNT", "CLOSESPIDER_TIMEOUT", "DOWNLOAD_DELAY",
+                ))
+                self.assertEqual(actual, expected)
+                self.assertGreaterEqual(settings.getfloat("AUTOTHROTTLE_MAX_DELAY"), expected[3])
+                process.return_value.crawl.assert_called_once_with(
+                    GuaraniSpider, single_url="https://example.org", crawl_domain=True,
+                )
+                process.return_value.start.assert_called_once()
+                self.assertIn("user_agent=GuaraScraper", logs.output[0])
+                self.assertIn("robots_obey=True", logs.output[0])
+                self.assertEqual(os.getcwd(), original_dir)
+
+    def test_identity_matches_robot_rules(self):
+        settings = Settings()
+        settings.setmodule("scraper.settings")
+        request = Request("https://example.org/private")
+        middleware = UserAgentMiddleware(settings.get("USER_AGENT"))
+        middleware.process_request(request, Mock())
+        self.assertTrue(request.headers["User-Agent"].startswith(b"GuaraScraper "))
+        parser = ProtegoRobotParser.from_crawler(None, b"""
+User-agent: *
+Allow: /
+
+User-agent: GuaraScraper
+Disallow: /private
+""")
+        agent = settings.get("ROBOTSTXT_USER_AGENT")
+        self.assertFalse(parser.allowed(request.url, agent))
+        self.assertTrue(parser.allowed("https://example.org/public", agent))
 
     def test_scrapy_configuration_discovers_spider_and_pipeline(self):
         original_dir = os.getcwd()

@@ -15,22 +15,23 @@ NEWSPIDER_MODULE = "scraper"
 ADDONS = {}
 
 
-# Crawl responsibly by identifying yourself (and your website) on the user-agent
-USER_AGENT = "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/136.0.0.0 Safari/537.36"
+# Identify the crawler and link to its public project/contact page.
+USER_AGENT = "GuaraScraper (+https://github.com/guaran-ia/guarascraper)"
 
 # Obey robots.txt rules
 ROBOTSTXT_OBEY = True
+ROBOTSTXT_USER_AGENT = "GuaraScraper"
 
 # Configure maximum concurrent requests performed by Scrapy (default: 16)
-CONCURRENT_REQUESTS = 100
+CONCURRENT_REQUESTS = 8
+CONCURRENT_REQUESTS_PER_DOMAIN = 1
 
 # Configure a delay for requests for the same website (default: 0)
 # See https://docs.scrapy.org/en/latest/topics/settings.html#download-delay
 # See also autothrottle settings and docs
 DOWNLOAD_DELAY = 2
-# The download delay setting will honor only one of:
-# CONCURRENT_REQUESTS_PER_DOMAIN = 16
-# CONCURRENT_REQUESTS_PER_IP = 16
+# Keep the configured delay a floor; AutoThrottle may increase it.
+RANDOMIZE_DOWNLOAD_DELAY = False
 
 # Disable cookies (enabled by default)
 COOKIES_ENABLED = False
@@ -72,12 +73,12 @@ ITEM_PIPELINES = {
 # See https://docs.scrapy.org/en/latest/topics/autothrottle.html
 AUTOTHROTTLE_ENABLED = True
 # The initial download delay
-# AUTOTHROTTLE_START_DELAY = 5
+AUTOTHROTTLE_START_DELAY = 5
 # The maximum download delay to be set in case of high latencies
-# AUTOTHROTTLE_MAX_DELAY = 60
+AUTOTHROTTLE_MAX_DELAY = 60
 # The average number of requests Scrapy should be sending in parallel to
 # each remote server
-# AUTOTHROTTLE_TARGET_CONCURRENCY = 1.0
+AUTOTHROTTLE_TARGET_CONCURRENCY = 1.0
 # Enable showing throttling stats for every response received:
 # AUTOTHROTTLE_DEBUG = False
 
@@ -96,6 +97,8 @@ FEED_EXPORT_ENCODING = "utf-8"
 LOG_LEVEL = "DEBUG"
 RETRY_ENABLED = False
 REDIRECT_ENABLED = False
-DEPTH_LIMIT = 0 # No limit
-# CLOSESPIDER_TIMEOUT = 28800
-DOMAIN_TIMEOUT = 600
+METAREFRESH_ENABLED = False
+# Bounded defaults. CloseSpider limits apply to the entire run, not per domain.
+DEPTH_LIMIT = 3
+CLOSESPIDER_PAGECOUNT = 500
+CLOSESPIDER_TIMEOUT = 600
