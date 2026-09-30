@@ -172,6 +172,11 @@ python3 cli.py --csv data/web_sources.csv --crawl-domain
 
 Extracted text is saved in the corresponding directory (e.g. `data/download/`) in structured `.jsonl` format, along with metadata such as the source URL and domain.
 
+## Contributing and license
+
+Contributions are submitted under the terms in [CONTRIBUTING.md](CONTRIBUTING.md).
+The project source code is licensed under the [Apache License 2.0](LICENSE).
+
 ### Process downloaded data (optional)
 
 After installing the processor dependencies, run the processor from the
