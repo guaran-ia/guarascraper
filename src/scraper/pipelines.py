@@ -16,15 +16,14 @@ class GuaraniScraperPipeline:
     """
     Pipeline for processing and storing scraped content.
 
-    Each domain's content is saved to a JSONL file with fields:
-    - text: The concatenated scraped content of the page.
+    Each domain's accepted page chunks are saved to a JSONL file with fields:
+    - text: The concatenated accepted text chunks for the page.
     - date: The timestamp when the page was scraped.
     - url: The URL of the page.
     """
 
     def __init__(self):
         """Initialize the pipeline."""
-        self.files = {}
         self.corpus_dir = str(crawl_state.DATA_DIR)
         self._previous_urls = {}
         os.makedirs(self.corpus_dir, exist_ok=True)
@@ -34,7 +33,7 @@ class GuaraniScraperPipeline:
         return crawl_state.clean_domain(url)
 
     def process_item(self, item, spider):
-        """Process an item by appending a new line for each scraped item."""
+        """Merge a new accepted chunk into its page's JSONL record."""
         adapter = ItemAdapter(item)
 
         # Get the URL and clean domain
@@ -100,8 +99,3 @@ class GuaraniScraperPipeline:
                 f.write(json.dumps(record, ensure_ascii=False) + "\n")
 
         return item
-
-    def close_spider(self, spider):
-        """Close all open files when spider finishes."""
-        for file_handle in self.files.values():
-            file_handle.close()

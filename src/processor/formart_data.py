@@ -4,7 +4,6 @@ import spacy
 from tqdm import tqdm
 from pathlib import Path
 from urllib.parse import urlparse
-import re
 import sys
 import argparse
 import math
@@ -69,7 +68,7 @@ def get_empty_report() -> dict:
 
 
 def finalize_report(report: dict) -> dict:
-    """Compute average values for the aggregated report and update README automatically."""
+    """Compute average values for the aggregate report."""
 
     n = report["num_docs"]
     if n > 0:
@@ -79,42 +78,6 @@ def finalize_report(report: dict) -> dict:
         report["avg_words_no_punct_spacy"] = report["num_words_no_punct_spacy"] / n
         report["avg_chars"] = report["num_chars"] / n
         report["avg_language_score"] = report["sum_lang_score"] / n
-
-    # ---------------------------
-    # AUTOMATIC README UPDATE
-    # ---------------------------
-
-    README_FILE = Path(__file__).resolve().parent / "README.md"
-
-    if README_FILE.exists():
-        with open(README_FILE, "r", encoding="utf-8") as f:
-            content = f.read()
-
-        # Safe replacements using lambda functions
-        replacements = [
-            (r"(\*\*Total number of documents:\*\*\s*)[\d,]+", f"{report['num_docs']:,}"),
-            (r"(\*\*Average language score:\*\*\s*)[0-9.]+", f"{report['avg_language_score']:.6f}"),
-            (r"(\*\*Average number of words using `split\(\)`:\*\*\s*)[0-9.]+", f"{report['avg_words_split']:.2f}"),
-            (r"(\*\*Average number of words using `spacy` with punctuation:\*\*\s*)[0-9.]+", f"{report['avg_words_punct_spacy']:.2f}"),
-            (r"(\*\*Average number of words using `spacy` without punctuation:\*\*\s*)[0-9.]+", f"{report['avg_words_no_punct_spacy']:.2f}"),
-            (r"(\*\*Total number of words using `split\(\)`:\*\*\s*)[\d,]+", f"{report['num_words_split']:,}"),
-            (r"(\*\*Total number of words using `spacy` with punctuation:\*\*\s*)[\d,]+", f"{report['num_words_punct_spacy']:,}"),
-            (r"(\*\*Total number of words using `spacy` without punctuation:\*\*\s*)[\d,]+", f"{report['num_words_no_punct_spacy']:,}"),
-            (r"(\*\*Average number of characters:\*\*\s*)[0-9.]+", f"{report['avg_chars']:.2f}"),
-            (r"(\*\*Total number of characters:\*\*\s*)[\d,]+", f"{report['num_chars']:,}"),
-        ]
-
-        for pattern, value in replacements:
-            content = re.sub(pattern, lambda m: m.group(1) + value, content)
-
-        # Save updated README
-        with open(README_FILE, "w", encoding="utf-8") as f:
-            f.write(content)
-
-        print(f"✅ README updated at {README_FILE}")
-    else:
-        print(f"⚠️ README not found at {README_FILE}, skipping update.")
-
 
     return report
 
@@ -243,7 +206,7 @@ def main(argv=None) -> None:
 
                     lang_info = identify_language(clean_text, identifier, GN_CODE, args.min_language_score)
 
-                    if lang_info  and lang_info['lang'] == GN_CODE:
+                    if lang_info:
                         lang = lang_info["lang"]
                         lang_score = lang_info["score"]
                         lang_src = lang_info["source_score"]

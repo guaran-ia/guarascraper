@@ -9,11 +9,30 @@ from unittest.mock import Mock, patch
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[2]))
 
-from src.processor.formart_data import identify_language
+from src.processor.formart_data import finalize_report, identify_language
 from src.processor import formart_data as processor
 
 
 class LanguageFilteringTests(unittest.TestCase):
+    def test_finalize_report_only_computes_aggregates(self):
+        report = {
+            "num_docs": 2,
+            "num_words_split": 10,
+            "num_words_punct_spacy": 12,
+            "num_words_no_punct_spacy": 10,
+            "num_chars": 54,
+            "sum_lang_score": 1.6,
+        }
+        with patch.object(processor, "Path") as path, patch("builtins.open") as open_file:
+            finalized = finalize_report(report)
+        self.assertEqual(finalized["avg_words_split"], 5)
+        self.assertEqual(finalized["avg_words_punct_spacy"], 6)
+        self.assertEqual(finalized["avg_words_no_punct_spacy"], 5)
+        self.assertEqual(finalized["avg_chars"], 27)
+        self.assertEqual(finalized["avg_language_score"], 0.8)
+        path.assert_not_called()
+        open_file.assert_not_called()
+
     def test_cli_threshold_validation(self):
         self.assertEqual(processor.parse_args([]).min_language_score, 0.70)
         for score in ("0", "0.6", "0.85", "1"):
