@@ -7,7 +7,6 @@ from pathlib import Path
 import subprocess
 import sys
 import tempfile
-from types import ModuleType
 import unittest
 from unittest.mock import Mock, patch
 
@@ -34,9 +33,7 @@ from scraper.utils import crawl_state
 class ScraperTests(unittest.TestCase):
     def make_spider(self, crawler=None, **kwargs):
         # Replace only the external identifier; use the real Scrapy spider.
-        module = ModuleType("corpus.src.pipeline.language_identifier.language_identifier")
-        module.LanguageIdentifier = Mock(return_value=Mock())
-        with patch.dict(sys.modules, {module.__name__: module}):
+        with patch("scraper.spider.create_identifier", return_value=Mock()):
             if crawler is not None:
                 return GuaraniSpider.from_crawler(crawler, **kwargs)
             return GuaraniSpider(**kwargs)

@@ -49,13 +49,13 @@ This script:
 
 ## ▶️ How to Run the Script
 
-Use Python 3.12 and an activated virtual environment. From the repository root,
-clone the external `corpus` dependency as described in the [main README](../../README.md).
-Install the processor and identifier requirements, then run:
+Use Python 3.12.7 and an activated virtual environment. From the repository root,
+install the processor and pinned identifier dependencies and prepare its models:
 
 ```bash
-python -m pip install -r src/processor/requirements.txt
-python -m pip install -r corpus/src/pipeline/language_identifier/requirements.txt
+python -m pip install -c constraints/python312.txt -r requirements-build.txt
+python -m pip install --no-build-isolation -c constraints/python312.txt -r src/processor/requirements.txt -r requirements-identifier.txt
+python scripts/setup_identifier.py
 python3 -m src.processor.formart_data
 ```
 
@@ -70,10 +70,11 @@ still requires the document's predicted language to be `grn`.
 
 Scraper dependencies are not needed for processor-only use. This script uses
 `spacy.blank("xx")` for tokenization, so no downloaded spaCy language model is
-required. Follow the external identifier's README to install OpenLID; its other
-models download on first use. The processor's requirements declare its direct
-dependencies and a Click compatibility package needed by spaCy's CLI, not a
-complete transitive lock.
+required. All three identifier models are pinned and prepared by the setup
+script before processing. See [reproducible setup](../../docs/setup.md) for
+checkout revisions, version constraints, and troubleshooting. The processor's
+requirements declare direct dependencies and the Click compatibility package;
+transitive versions are pinned separately in `constraints/python312.txt`.
 
 ------------------------------------------------------------------------
 

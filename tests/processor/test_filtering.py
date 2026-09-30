@@ -3,7 +3,6 @@
 import sys
 import json
 import tempfile
-from types import ModuleType
 from pathlib import Path
 import unittest
 from unittest.mock import Mock, patch
@@ -27,12 +26,10 @@ class LanguageFilteringTests(unittest.TestCase):
                 self.assertEqual(error.exception.code, 2)
 
     def test_cli_threshold_controls_retained_output(self):
-        module = ModuleType("corpus.src.pipeline.language_identifier.language_identifier")
         identifier = Mock()
         identifier.identify_languages.return_value = {
             "languages": ("grn", 0.80), "source": "glotlid", "voting": "agree",
         }
-        module.LanguageIdentifier = Mock(return_value=identifier)
         for args, retained in (([], 1), (["--min-language-score", "0.9"], 0),
                                (["--min-language-score", "0.8"], 1)):
             with self.subTest(args=args), tempfile.TemporaryDirectory() as directory:
@@ -42,7 +39,7 @@ class LanguageFilteringTests(unittest.TestCase):
                 (downloads / "example.org.jsonl").write_text(json.dumps({
                     "text": "Ñande ñe’ẽ iporã ha oikove.", "url": "https://example.org/page",
                 }) + "\n", encoding="utf-8")
-                with patch.dict(sys.modules, {module.__name__: module}), \
+                with patch.object(processor, "create_identifier", return_value=identifier), \
                         patch.object(processor, "__file__", str(root / "src" / "processor" / "formart_data.py")), \
                         patch.object(processor, "finalize_report", side_effect=lambda report: report), \
                         patch.object(processor, "tqdm"), patch("builtins.print"):

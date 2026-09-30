@@ -15,6 +15,8 @@ MIN_LANGUAGE_SCORE = 0.70
 if str(PROJECT_ROOT) not in sys.path:
     sys.path.insert(0, str(PROJECT_ROOT))
 
+from src.language_identifier import create_identifier
+
 
 # ============================
 # UTILITY FUNCTIONS
@@ -162,7 +164,6 @@ def parse_args(argv=None):
 
 def main(argv=None) -> None:
     args = parse_args(argv)
-    from corpus.src.pipeline.language_identifier.language_identifier import LanguageIdentifier
 
     # ANSI colors
     BLUE = "\033[34m"
@@ -182,7 +183,7 @@ def main(argv=None) -> None:
     os.makedirs(OUTPUT_DIR, exist_ok=True)
 
     tokenizer = spacy.blank("xx")
-    identifier = LanguageIdentifier(glotlid=True, fasttext=True, openlid=True)
+    identifier = create_identifier()
 
     print(f"{BLUE}=== Processing all domains ==={RESET}")
     print(f"Minimum Guarani classification confidence: {args.min_language_score:g}")

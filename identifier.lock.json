@@ -1,0 +1,25 @@
+{
+  "repository": "https://github.com/guaran-ia/corpus.git",
+  "revision": "d599a2e4ae065f8708c7b15aefc30c0832760d33",
+  "source_directory": "src/pipeline/language_identifier",
+  "models": {
+    "glotlid": {
+      "repo_id": "cis-lmu/glotlid",
+      "revision": "85cd6716494360367b75f642b5bc78667605d0b4",
+      "filename": "model.bin",
+      "sha256": "a818b6bd42a628ab47d3dfc1578c7ea615c45381f3494c42535e31e8c4cafc9e"
+    },
+    "fasttext": {
+      "repo_id": "facebook/fasttext-language-identification",
+      "revision": "3af127d4124fc58b75666f3594bb5143b9757e78",
+      "filename": "model.bin",
+      "sha256": "8ded5749a2ad79ae9ab7c9190c7c8b97ff20d54ad8b9527ffa50107238fc7f6a"
+    },
+    "openlid": {
+      "repo_id": "laurievb/OpenLID",
+      "revision": "be5bd6c7f8d7c89e17d6bf1b37fff377c3f5430e",
+      "filename": "model.bin",
+      "sha256": "0e2bc6d0d3048b38c4e2e8aa77b4618108670eb91cb72544d3340f605964a78b"
+    }
+  }
+}

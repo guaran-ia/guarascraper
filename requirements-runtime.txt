@@ -1,0 +1,4 @@
+# Complete active scraper + processor + real language identifier.
+-r requirements.txt
+-r src/processor/requirements.txt
+-r requirements-identifier.txt

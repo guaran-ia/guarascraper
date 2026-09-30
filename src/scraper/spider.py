@@ -6,6 +6,7 @@ from scrapy import Request
 # from ..utils.lang_detector import GuaraniDetector
 from .items import GuaraniWord
 from .utils import crawl_state
+from language_identifier import create_identifier
 
 
 class GuaraniSpider(CrawlSpider):
@@ -31,9 +32,7 @@ class GuaraniSpider(CrawlSpider):
         crawl_domain = kwargs.pop("crawl_domain", False)
 
         super(GuaraniSpider, self).__init__(*args, **kwargs)
-        from corpus.src.pipeline.language_identifier.language_identifier import LanguageIdentifier
-
-        self.detector = LanguageIdentifier(glotlid=True, fasttext=True, openlid=True)
+        self.detector = create_identifier()
         self._fineweb_urls = {}
 
 
@@ -48,14 +47,14 @@ class GuaraniSpider(CrawlSpider):
                 # Extract allowed domains from start URLs
                 self.allowed_domains = []
                 for url in urls:
-                    domain = urlparse(url).netloc
+                    domain = urlparse(url).hostname
                     if domain not in self.allowed_domains:
                         self.allowed_domains.append(domain)
 
         # Handle single URL input
         elif single_url:
             self.start_urls = [single_url]
-            domain = urlparse(single_url).netloc
+            domain = urlparse(single_url).hostname
             self.allowed_domains = [domain]
 
             print(f"DEBUG: Single URL mode - crawling {single_url}")

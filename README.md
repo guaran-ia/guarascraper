@@ -160,8 +160,9 @@ text. New chunks from the same page in the current run are still concatenated.
 # Installation
 
 ## Prerequisites
-- Python 3.12 (the CI-tested version; newer versions are not yet verified)
-- pip (Python package manager)
+- Python 3.12.7 for the reproduced environment (other Python versions are not verified)
+- Git and a C++ compiler for building FastText when no wheel is available
+- About 4.1 GB for the three models, plus space for Python packages and caches
 
 ### Dependency sets
 
@@ -169,21 +170,21 @@ text. New chunks from the same page in the current run are still concatenated.
 | --- | --- | --- |
 | Scraper | `requirements.txt` | CLI and Scrapy crawling |
 | Processor | `src/processor/requirements.txt` | Normalization and report generation; independent of Scrapy |
-| Language identifier | `corpus/src/pipeline/language_identifier/requirements.txt` | Shared runtime dependency for both crawling and processing |
+| Language identifier | `requirements-identifier.txt` | Shared dependencies for the revision in `identifier.lock.json` |
+| Full active runtime | `requirements-runtime.txt` | Includes scraper, processor, and identifier requirements |
+| Build tools | `requirements-build.txt` | Pinned tools for the FastText source build |
 | Offline scraper checks | `requirements-ci.txt` | Includes the scraper requirements; tests use standard-library `unittest` |
 | Legacy detector | `src/scraper/utils/requirements-legacy.txt` | Only for manually using the old `GuaraniDetector`; not used by either active component |
 
-These files declare direct dependencies and required compatibility packages,
-with pinned versions for this project's components. They are not generated locks
-of all transitive dependencies; pip
-resolves those dependencies during installation. For a reproducible experiment,
-record the external `corpus` commit (`git -C corpus rev-parse HEAD`) and the
-resolved environment (`python -m pip freeze`) alongside the run outputs.
+Requirement files declare direct dependencies. Separately,
+`constraints/python312.txt` pins the resolved runtime and build-tool versions.
+Use `-c constraints/python312.txt` when installing a component or the full
+runtime. These are version constraints, not a hash-locked wheel bundle.
 
-Offline scraper checks run on Linux in GitHub Actions; they have also been run
-locally on macOS. Full crawling and processing additionally depend on the
-external identifier and its models. Its FastText backend may require a C++
-compiler and Python development headers if a suitable wheel is unavailable.
+The real-model scrape-to-processor check has been verified on CPython 3.12.7,
+macOS arm64. Linux has CI workflows for offline checks and an on-demand
+real-model integration run; Windows is not currently verified. FastText may
+require Python development headers as well as a C++ compiler.
 Legacy PyICU/Polyglot dependencies are optional and require their own native
 library setup; they are not prerequisites for the active scraper or processor.
 
@@ -194,71 +195,68 @@ components use the external identifier's model setup described below.
 
 ## Setup Instructions
 
-Run these commands from a terminal. Replace `<repository-url>` with this repository's Git URL.
+Run these commands from a terminal.
 
 1. **Clone the repository**
    ```bash
-   git clone <repository-url> guarascraper
+    git clone https://github.com/guaran-ia/guarascraper.git
    cd guarascraper
    ```
 
 2. **Create and activate a virtual environment** (recommended)
    ```bash
-   python3 -m venv venv
-
-   # On Windows
-   venv\Scripts\activate
-
-   # On macOS/Linux
-   source venv/bin/activate
+    python3.12 -m venv venv
+    source venv/bin/activate
    ```
 
-3. **Install scraper dependencies**
-   ```bash
-   python -m pip install -r requirements.txt
-   ```
+3. **Install the tested build tools and runtime**
+    ```bash
+    python -m pip install -c constraints/python312.txt -r requirements-build.txt
+    python -m pip install --no-build-isolation -c constraints/python312.txt -r requirements-runtime.txt
+    python -m pip check
+    ```
 
-4. **Fetch the language identifier dependency**
+   `--no-build-isolation` ensures FastText uses the installed pinned build tools.
+   The full runtime includes the optional processor. For scraper-only use,
+   install `requirements.txt` and `requirements-identifier.txt` together using
+   the same constraints and build options; see
+   [component-only environments](docs/setup.md#component-only-environments).
+   For processor-only use, see [processor setup](src/processor/README.md).
 
-   The scraper and processor import the language identifier from the Guaran-IA
-   `corpus` repository. Clone it into the project root and check out only the
-   required source directory:
+4. **Prepare the pinned identifier and models**
 
-   ```bash
-   git clone --filter=blob:none --sparse https://github.com/guaran-ia/corpus.git corpus
-   git -C corpus sparse-checkout set src/pipeline/language_identifier
-   ```
+    ```bash
+    python scripts/setup_identifier.py
+    ```
 
-   Keep the `corpus/` directory beside `cli.py`; it is a runtime dependency and
-   is not included in this repository. Install its requirements into the same
-   virtual environment:
+   The script creates a sparse `corpus/` checkout at revision
+   `d599a2e4ae065f8708c7b15aefc30c0832760d33`, downloads the three model artifacts
+   at the revisions in `identifier.lock.json`, and checks their SHA-256 hashes.
+   All models are prepared before runtime; the scraper and processor load the
+   pinned cached artifacts without contacting Hugging Face. Upstream prediction
+   and voting logic is retained; our loader overrides its model-loading methods.
+   The OpenLID artifact comes from the pinned official `laurievb/OpenLID` model
+   repository instead of the unversioned compressed download URL.
 
-   ```bash
-   python -m pip install -r corpus/src/pipeline/language_identifier/requirements.txt
-   ```
+   An existing non-Git `corpus/` directory, a different revision, or modified
+   identifier source is rejected rather than overwritten. See
+   [troubleshooting](docs/setup.md#troubleshooting) for using another checkout
+   location and model download recovery. Model files remain outside Git;
+   their licenses are those of their respective model repositories.
 
-   Follow the identifier's README for model setup. GlotLID and FastText models
-   download on first use; OpenLID requires separate installation into the
-   identifier's model directory. These assets are required for actual crawling
-   and processing, but not for `--help` or offline scraper tests.
+5. **Check startup and the complete local flow**
 
-5. **(Optional) Install processor dependencies**
+    ```bash
+    python cli.py --help
+    python -m src.processor.formart_data --help
+    python scripts/integration_check.py
+    ```
 
-   If you plan to normalize and report on downloaded data, install the separate
-   processor dependencies as well:
-
-   ```bash
-   python -m pip install -r src/processor/requirements.txt
-   ```
-
-   For a processor-only environment, install just the processor and external
-   identifier requirements; skip step 3. See [processor setup](src/processor/README.md).
-
-6. **Check the command-line entry point**
-
-   ```bash
-   python cli.py --help
-   ```
+   The integration check serves synthetic HTML on localhost, runs the real CLI
+   in a fresh temporary source/output layout, processes the result using all
+   three real models, and checks that a repeated crawl preserves the record.
+   It does not use the project's data directories or contact live source sites.
+   Full setup details and maintenance instructions are in [docs/setup.md](docs/setup.md).
 
 ---
 
@@ -348,16 +346,16 @@ boundary. Run these tests in a processor environment with
 To run these checks locally in an activated virtual environment:
 
 ```bash
-python -m pip install -r requirements-ci.txt
+python -m pip install -c constraints/python312.txt -r requirements-ci.txt
 python -m pip check
 python -m compileall -q cli.py src
 python cli.py --help
 python -m unittest discover -s tests -v
 ```
 
-The CI dependency set covers offline scraper checks. Tests replace the external
-language identifier with a fake detector; they do not download models, crawl
-live websites, or validate model accuracy or end-to-end processing with the
-external language identifier.
+The default CI tests use a fake detector and do not download models or crawl
+live websites. The separate **Real-model integration** workflow can be started
+manually in GitHub Actions; it installs the constrained runtime, prepares and
+verifies pinned models, and runs the localhost scrape-to-processor check.
 
 ---

@@ -172,7 +172,9 @@ The report does not include rejection counts or reasons.
 * Model confidence is not a human-validated language-purity measure. Model
   versions, voting behavior, tokenizer versions, and orthographic variation can
   affect classification and counts; record dependency and model revisions for
-  comparisons between runs.
+  comparisons between runs. The reproducible setup pins the identifier and all
+  three model revisions in `identifier.lock.json`, with dependency versions in
+  `constraints/python312.txt`.
 * Existing records prevent recollection; their contents are not automatically
   refreshed when source pages change. No-record pages can be visited again.
   There is no general exact-text or near-duplicate deduplication across URLs.
