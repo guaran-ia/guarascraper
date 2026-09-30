@@ -1,0 +1,4 @@
+# Direct dependencies of the identifier revision in identifier.lock.json.
+fasttext==0.9.3
+huggingface-hub==0.36.0
+pandas==2.2.3

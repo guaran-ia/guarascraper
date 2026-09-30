@@ -1,0 +1,39 @@
+name: Real-model integration
+
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  real-model-flow:
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    env:
+      HF_HUB_DISABLE_XET: '1'
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12.7'
+          cache: pip
+          cache-dependency-path: |
+            constraints/python312.txt
+            requirements*.txt
+            src/processor/requirements.txt
+      - name: Install pinned build tools and runtime
+        run: |
+          python -m pip install -c constraints/python312.txt -r requirements-build.txt
+          python -m pip install --no-build-isolation -c constraints/python312.txt -r requirements-runtime.txt
+          python -m pip check
+      - name: Fetch pinned identifier source
+        run: python scripts/setup_identifier.py --skip-models
+      - uses: actions/cache@v4
+        with:
+          path: corpus/src/pipeline/language_identifier/models
+          key: identifier-models-${{ runner.os }}-${{ hashFiles('identifier.lock.json') }}
+      - name: Prepare and verify pinned models
+        run: python scripts/setup_identifier.py
+      - name: Test real-model scrape-to-processor flow
+        run: python scripts/integration_check.py

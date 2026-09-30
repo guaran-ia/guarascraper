@@ -1,0 +1,5 @@
+# Build tools used for the tested FastText source build.
+pip==25.3
+setuptools==80.3.1
+wheel==0.45.1
+pybind11==2.13.6
