@@ -183,3 +183,6 @@ corpus/
 data/web_sources.csv
 .vscode/launch.json
 logs/
+
+icu*
+pyICU*
