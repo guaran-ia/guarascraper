@@ -1,0 +1,9 @@
+# Optional dependencies for the unused GuaraniDetector in lang_detector.py.
+# Neither cli.py nor the processor uses this detector.
+fasttext==0.9.3
+numpy==1.26.0
+nltk==3.9.1
+polyglot==16.7.4
+pycld2==0.42
+pyicu==2.15.2
+Morfessor==2.0.6

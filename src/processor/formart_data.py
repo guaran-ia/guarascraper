@@ -12,8 +12,6 @@ PROJECT_ROOT = Path(__file__).resolve().parents[2]
 if str(PROJECT_ROOT) not in sys.path:
     sys.path.insert(0, str(PROJECT_ROOT))
 
-from corpus.src.pipeline.language_identifier.language_identifier import LanguageIdentifier
-
 
 # ============================
 # UTILITY FUNCTIONS
@@ -143,6 +141,8 @@ def identify_language(text: str, identifier, gn_code: str) -> dict | None:
 # ============================
 
 def main() -> None:
+    from corpus.src.pipeline.language_identifier.language_identifier import LanguageIdentifier
+
     # ANSI colors
     BLUE = "\033[34m"
     GREEN = "\033[32m"

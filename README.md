@@ -131,8 +131,32 @@ Each record includes:
 # Installation
 
 ## Prerequisites
-- Python 3.12+
+- Python 3.12 (the CI-tested version; newer versions are not yet verified)
 - pip (Python package manager)
+
+### Dependency sets
+
+| Component | Requirements | When needed |
+| --- | --- | --- |
+| Scraper | `requirements.txt` | CLI and Scrapy crawling |
+| Processor | `src/processor/requirements.txt` | Normalization and report generation; independent of Scrapy |
+| Language identifier | `corpus/src/pipeline/language_identifier/requirements.txt` | Shared runtime dependency for both crawling and processing |
+| Offline scraper checks | `requirements-ci.txt` | Includes the scraper requirements; tests use standard-library `unittest` |
+| Legacy detector | `src/scraper/utils/requirements-legacy.txt` | Only for manually using the old `GuaraniDetector`; not used by either active component |
+
+These files declare direct dependencies and required compatibility packages,
+with pinned versions for this project's components. They are not generated locks
+of all transitive dependencies; pip
+resolves those dependencies during installation. For a reproducible experiment,
+record the external `corpus` commit (`git -C corpus rev-parse HEAD`) and the
+resolved environment (`python -m pip freeze`) alongside the run outputs.
+
+Offline scraper checks run on Linux in GitHub Actions; they have also been run
+locally on macOS. Full crawling and processing additionally depend on the
+external identifier and its models. Its FastText backend may require a C++
+compiler and Python development headers if a suitable wheel is unavailable.
+Legacy PyICU/Polyglot dependencies are optional and require their own native
+library setup; they are not prerequisites for the active scraper or processor.
 
 ## Setup Instructions
 
@@ -172,8 +196,17 @@ Run these commands from a terminal. Replace `<repository-url>` with this reposit
    ```
 
    Keep the `corpus/` directory beside `cli.py`; it is a runtime dependency and
-   is not included in this repository. The identifier may require model assets
-   or additional packages; follow any setup instructions in that dependency.
+   is not included in this repository. Install its requirements into the same
+   virtual environment:
+
+   ```bash
+   python -m pip install -r corpus/src/pipeline/language_identifier/requirements.txt
+   ```
+
+   Follow the identifier's README for model setup. GlotLID and FastText models
+   download on first use; OpenLID requires separate installation into the
+   identifier's model directory. These assets are required for actual crawling
+   and processing, but not for `--help` or offline scraper tests.
 
 5. **(Optional) Install processor dependencies**
 
@@ -183,6 +216,9 @@ Run these commands from a terminal. Replace `<repository-url>` with this reposit
    ```bash
    python -m pip install -r src/processor/requirements.txt
    ```
+
+   For a processor-only environment, install just the processor and external
+   identifier requirements; skip step 3. See [processor setup](src/processor/README.md).
 
 6. **Check the command-line entry point**
 
@@ -255,6 +291,8 @@ The project source code is licensed under the [Apache License 2.0](LICENSE).
 GitHub Actions runs offline checks on Python 3.12 for pushes and pull requests:
 dependency consistency, source compilation, CLI startup, and regression tests
 for Scrapy discovery, crawl modes, text extraction, and JSONL output.
+An independent processor job installs only the processor requirements and
+checks module imports and blank-tokenizer initialization.
 
 To run these checks locally in an activated virtual environment:
 
@@ -268,6 +306,7 @@ python -m unittest discover -s tests -v
 
 The CI dependency set covers offline scraper checks. Tests replace the external
 language identifier with a fake detector; they do not download models, crawl
-live websites, or validate model accuracy or the processor's runtime setup.
+live websites, or validate model accuracy or end-to-end processing with the
+external language identifier.
 
 ---

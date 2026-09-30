@@ -46,16 +46,22 @@ This script:
 
 ## ▶️ How to Run the Script
 
-From the repository root, after following the main README's virtual environment
-and language-identifier setup, install processor-specific dependencies and run:
+Use Python 3.12 and an activated virtual environment. From the repository root,
+clone the external `corpus` dependency as described in the [main README](../../README.md).
+Install the processor and identifier requirements, then run:
 
 ```bash
 python -m pip install -r src/processor/requirements.txt
+python -m pip install -r corpus/src/pipeline/language_identifier/requirements.txt
 python3 -m src.processor.formart_data
 ```
 
-All dependencies (spaCy models, language identifier models, etc.) must be
-installed beforehand.
+Scraper dependencies are not needed for processor-only use. This script uses
+`spacy.blank("xx")` for tokenization, so no downloaded spaCy language model is
+required. Follow the external identifier's README to install OpenLID; its other
+models download on first use. The processor's requirements declare its direct
+dependencies and a Click compatibility package needed by spaCy's CLI, not a
+complete transitive lock.
 
 ------------------------------------------------------------------------
 

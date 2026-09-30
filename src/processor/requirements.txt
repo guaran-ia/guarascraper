@@ -1,3 +1,6 @@
-auto_mix_prep==0.2.0
+# Direct processor dependencies; no Scrapy installation is required.
+# The external language identifier has its own requirements (see README).
 spacy==3.8.11
 tqdm==4.67.1
+# spaCy's CLI imports Click; newer Typer releases no longer install it implicitly.
+click==8.2.1
