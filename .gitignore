@@ -175,14 +175,16 @@ cython_debug/
 # PyPI configuration file
 .pypirc
 
-*.bin
-
-test*
+# Downloaded FastText model for the optional legacy detector.
+/src/scraper/utils/lang_model/lid.176.bin
+# Local model left over from the former package layout.
+/src/guarani_scraper/utils/lang_model/lid.176.bin
 
 corpus/
 data/web_sources.csv
 .vscode/launch.json
 logs/
 
-icu*
-pyICU*
+# Local third-party source/build trees (not project source).
+/icu-71.1/
+/PyICU-2.9/

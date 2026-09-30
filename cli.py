@@ -2,6 +2,7 @@ import sys
 import os
 import argparse
 import logging
+import math
 from logging.handlers import RotatingFileHandler
 from scrapy.crawler import CrawlerProcess
 from scrapy.utils.project import get_project_settings
@@ -21,6 +22,20 @@ root_logger = logging.getLogger()
 # Set root logger level to INFO so file receives INFO and ERROR only
 root_logger.setLevel(logging.INFO)
 root_logger.addHandler(handler)
+
+
+def nonnegative_int(value):
+    number = int(value)
+    if number < 0:
+        raise argparse.ArgumentTypeError("must be a non-negative integer")
+    return number
+
+
+def nonnegative_seconds(value):
+    number = float(value)
+    if not math.isfinite(number) or number < 0:
+        raise argparse.ArgumentTypeError("must be a finite, non-negative number")
+    return number
 
 
 def main():
@@ -49,8 +64,16 @@ def main():
     parser.add_argument(
         "--crawl-domain",
         action="store_true",
-        help="When used with --url, crawl the whole domain instead of only the page",
+        help="Follow links within the input domains (subject to crawl limits)",
     )
+    parser.add_argument("--max-depth", type=nonnegative_int,
+                        help="Maximum link depth (default: 3; 0 disables the limit)")
+    parser.add_argument("--max-pages", type=nonnegative_int,
+                        help="Response-count shutdown threshold for the whole run (default: 500; 0 disables)")
+    parser.add_argument("--timeout", type=nonnegative_seconds,
+                        help="Whole-run shutdown timeout in seconds (default: 600; 0 disables)")
+    parser.add_argument("--download-delay", type=nonnegative_seconds,
+                        help="Minimum per-domain delay in seconds (default: 2; AutoThrottle may increase it)")
 
     args = parser.parse_args()
 
@@ -72,7 +95,33 @@ def main():
     os.chdir(os.path.join(os.path.dirname(__file__), "src"))
 
     try:
-        process = CrawlerProcess(get_project_settings())
+        settings = get_project_settings()
+        for setting, value in (
+            ("DEPTH_LIMIT", args.max_depth),
+            ("CLOSESPIDER_PAGECOUNT", args.max_pages),
+            ("CLOSESPIDER_TIMEOUT", args.timeout),
+            ("DOWNLOAD_DELAY", args.download_delay),
+        ):
+            if value is not None:
+                settings.set(setting, value, priority="cmdline")
+        # AutoThrottle clamps to its maximum: keep it above the requested floor.
+        settings.set(
+            "AUTOTHROTTLE_MAX_DELAY",
+            max(settings.getfloat("AUTOTHROTTLE_MAX_DELAY"), settings.getfloat("DOWNLOAD_DELAY")),
+            priority="cmdline",
+        )
+        process = CrawlerProcess(settings)
+        logging.getLogger(__name__).info(
+            "Crawl policy: user_agent=%s robots_agent=%s robots_obey=%s "
+            "max_depth=%s max_pages=%s timeout=%ss download_delay=%ss "
+            "concurrency=%s per_domain=%s autothrottle=%s autothrottle_max_delay=%ss",
+            settings.get("USER_AGENT"), settings.get("ROBOTSTXT_USER_AGENT"),
+            settings.getbool("ROBOTSTXT_OBEY"), settings.getint("DEPTH_LIMIT"),
+            settings.getint("CLOSESPIDER_PAGECOUNT"), settings.getfloat("CLOSESPIDER_TIMEOUT"),
+            settings.getfloat("DOWNLOAD_DELAY"), settings.getint("CONCURRENT_REQUESTS"),
+            settings.getint("CONCURRENT_REQUESTS_PER_DOMAIN"), settings.getbool("AUTOTHROTTLE_ENABLED"),
+            settings.getfloat("AUTOTHROTTLE_MAX_DELAY"),
+        )
         process.crawl(GuaraniSpider, **spider_kwargs)
         process.start()
     finally:
