@@ -1,0 +1,3 @@
+# Offline scraper checks; model backends and processor dependencies are not used.
+Scrapy==2.13.0
+furl==2.1.4

@@ -172,11 +172,6 @@ python3 cli.py --csv data/web_sources.csv --crawl-domain
 
 Extracted text is saved in the corresponding directory (e.g. `data/download/`) in structured `.jsonl` format, along with metadata such as the source URL and domain.
 
-## Contributing and license
-
-Contributions are submitted under the terms in [CONTRIBUTING.md](CONTRIBUTING.md).
-The project source code is licensed under the [Apache License 2.0](LICENSE).
-
 ### Process downloaded data (optional)
 
 After installing the processor dependencies, run the processor from the
@@ -188,5 +183,30 @@ python -m src.processor.formart_data
 
 It reads `data/download/*.jsonl` and writes the normalized dataset and report
 under `data/processed/`.
+
+## Contributing and license
+
+Contributions are submitted under the terms in [CONTRIBUTING.md](CONTRIBUTING.md).
+The project source code is licensed under the [Apache License 2.0](LICENSE).
+
+## Automated checks
+
+GitHub Actions runs offline checks on Python 3.12 for pushes and pull requests:
+dependency consistency, source compilation, CLI startup, and regression tests
+for Scrapy discovery, crawl modes, text extraction, and JSONL output.
+
+To run these checks locally in an activated virtual environment:
+
+```bash
+python -m pip install -r requirements-ci.txt
+python -m pip check
+python -m compileall -q cli.py src
+python cli.py --help
+python -m unittest discover -s tests -v
+```
+
+The CI dependency set covers offline scraper checks. Tests replace the external
+language identifier with a fake detector; they do not download models, crawl
+live websites, or validate model accuracy or the processor's runtime setup.
 
 ---

@@ -9,7 +9,7 @@
 
 BOT_NAME = "guarani_scraper"
 
-SPIDER_MODULES = ["scraper"]
+SPIDER_MODULES = ["scraper.spider"]
 NEWSPIDER_MODULE = "scraper"
 
 ADDONS = {}

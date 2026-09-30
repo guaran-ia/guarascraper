@@ -5,9 +5,7 @@ from scrapy.spiders import CrawlSpider, Rule
 from scrapy.linkextractors import LinkExtractor
 from scrapy import Request
 # from ..utils.lang_detector import GuaraniDetector
-from corpus.src.pipeline.language_identifier.language_identifier import LanguageIdentifier
-
-from ..items import GuaraniWord
+from .items import GuaraniWord
 from furl import furl
 import os
 import json
@@ -36,6 +34,8 @@ class GuaraniSpider(CrawlSpider):
         crawl_domain = kwargs.pop("crawl_domain", False)
 
         super(GuaraniSpider, self).__init__(*args, **kwargs)
+        from corpus.src.pipeline.language_identifier.language_identifier import LanguageIdentifier
+
         self.detector = LanguageIdentifier(glotlid=True, fasttext=True, openlid=True)
 
 
