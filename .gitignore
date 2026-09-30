@@ -181,7 +181,8 @@ cython_debug/
 /src/guarani_scraper/utils/lang_model/lid.176.bin
 
 corpus/
-data/web_sources.csv
+/data/download/
+/data/processed/
 .vscode/launch.json
 logs/
 
