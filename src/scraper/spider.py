@@ -114,6 +114,10 @@ class GuaraniSpider(CrawlSpider):
             async for req in super().start():
                 yield req
 
+    def parse_start_url(self, response, **kwargs):
+        """Extract the starting page while CrawlSpider handles link following."""
+        yield from self.parse_item(response)
+
     def _domain_csv_path(self, domain: str) -> str | None:
         """Return the expected jsonl path for a domain inside the top-level data/ dir.
 

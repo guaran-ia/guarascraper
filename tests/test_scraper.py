@@ -13,6 +13,7 @@ from unittest.mock import Mock, patch
 
 from scrapy.http import HtmlResponse
 from scrapy import Request
+from scrapy.crawler import Crawler
 from scrapy.downloadermiddlewares.useragent import UserAgentMiddleware
 from scrapy.robotstxt import ProtegoRobotParser
 from scrapy.settings import Settings
@@ -30,11 +31,13 @@ from scraper.spider import GuaraniSpider
 
 
 class ScraperTests(unittest.TestCase):
-    def make_spider(self, **kwargs):
+    def make_spider(self, crawler=None, **kwargs):
         # Replace only the external identifier; use the real Scrapy spider.
         module = ModuleType("corpus.src.pipeline.language_identifier.language_identifier")
         module.LanguageIdentifier = Mock(return_value=Mock())
         with patch.dict(sys.modules, {module.__name__: module}):
+            if crawler is not None:
+                return GuaraniSpider.from_crawler(crawler, **kwargs)
             return GuaraniSpider(**kwargs)
 
     def test_cli_help(self):
@@ -146,6 +149,38 @@ Disallow: /private
         self.assertFalse(spider.single_page_only)
         self.assertEqual(spider.allowed_domains, ["example.org"])
         self.assertTrue(spider.rules[0].follow)
+
+    def test_domain_startup_extracts_starting_page_and_follows_allowed_links(self):
+        spider = self.make_spider(
+            crawler=Crawler(GuaraniSpider, Settings()),
+            single_url="https://example.org/page", crawl_domain=True,
+        )
+        spider.detector.identify_languages.return_value = {"languages": ["grn", 0.95]}
+
+        async def collect_startup_output():
+            requests = [request async for request in spider.start()]
+            self.assertEqual(len(requests), 1)
+            response = HtmlResponse(
+                url=requests[0].url, request=requests[0], encoding="utf-8",
+                body=('<html><body><p>Ñande ñe’ẽ iporã ha oikove.</p>'
+                      '<a href="/next">Next</a>'
+                      '<a href="https://other.example/">Offsite</a>'
+                      '</body></html>').encode("utf-8"),
+            )
+            # Scrapy uses the spider's _parse when a start request has no callback.
+            callback = requests[0].callback or spider._parse
+            return [result async for result in callback(response)]
+
+        with patch.object(spider, "_url_already_scraped", return_value=False):
+            results = asyncio.run(collect_startup_output())
+        items = [result for result in results if isinstance(result, GuaraniWord)]
+        links = [result for result in results if isinstance(result, Request)]
+        self.assertEqual(len(items), 1)
+        self.assertEqual(items[0]["word"], "Ñande ñe’ẽ iporã ha oikove.")
+        self.assertEqual(items[0]["url"], "https://example.org/page")
+        self.assertEqual([request.url for request in links], ["https://example.org/next"])
+        self.assertEqual(links[0].callback, spider._callback)
+        spider.detector.identify_languages.assert_called_once()
 
     def test_extraction_excludes_scripts_and_non_guarani(self):
         spider = self.make_spider(single_url="https://example.org/page")
