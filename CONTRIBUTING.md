@@ -3,6 +3,17 @@
 Thank you for considering a contribution to GuaraScraper. Contributions are
 welcome through GitHub pull requests.
 
+Please follow our [Code of Conduct](CODE_OF_CONDUCT.md) in all project spaces.
+For vulnerabilities, use the private contact in [SECURITY.md](SECURITY.md).
+
+## Reporting issues
+
+Use the bug-report template for reproducible problems and the feature-request
+template for improvements. Include your commit, Python/OS details, and a minimal
+reproduction for bugs. Search existing issues first; questions can be submitted
+as a blank issue. Security reports and conduct reports should use the private
+channels described in the corresponding policies.
+
 ## Contribution terms
 
 By intentionally submitting a contribution for inclusion in this repository,

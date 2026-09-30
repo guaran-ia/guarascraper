@@ -290,6 +290,10 @@ under `data/processed/`.
 
 Contributions are submitted under the terms in [CONTRIBUTING.md](CONTRIBUTING.md).
 The project source code is licensed under the [Apache License 2.0](LICENSE).
+Participation is governed by our [Code of Conduct](CODE_OF_CONDUCT.md).
+For vulnerability reports, follow the private reporting instructions in
+[SECURITY.md](SECURITY.md). Bug reports and feature requests can be submitted
+through [GitHub issues](https://github.com/guaran-ia/guarascraper/issues).
 
 ## Automated checks
 
