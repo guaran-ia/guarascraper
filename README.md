@@ -158,6 +158,11 @@ compiler and Python development headers if a suitable wheel is unavailable.
 Legacy PyICU/Polyglot dependencies are optional and require their own native
 library setup; they are not prerequisites for the active scraper or processor.
 
+The optional legacy detector also expects the downloaded FastText model at
+`src/scraper/utils/lang_model/lid.176.bin`. That exact asset is ignored by Git
+and must be supplied separately to use the legacy detector. The active
+components use the external identifier's model setup described below.
+
 ## Setup Instructions
 
 Run these commands from a terminal. Replace `<repository-url>` with this repository's Git URL.
