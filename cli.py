@@ -9,8 +9,6 @@ from scrapy.utils.project import get_project_settings
 # Add src to path to import modules
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), "src"))
 
-from guarani_scraper.spiders.guarani_spider import GuaraniSpider
-
 # Ensure logs directory exists and configure an error log file
 LOG_DIR = os.path.join(os.path.dirname(__file__), "logs")
 os.makedirs(LOG_DIR, exist_ok=True)
@@ -55,6 +53,10 @@ def main():
     )
 
     args = parser.parse_args()
+
+    # Import the spider after argument parsing so --help is available without
+    # the optional external language-identifier checkout.
+    from scraper.spider import GuaraniSpider
 
     # Prepare spider arguments
     spider_kwargs = {}

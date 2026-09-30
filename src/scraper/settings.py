@@ -9,8 +9,8 @@
 
 BOT_NAME = "guarani_scraper"
 
-SPIDER_MODULES = ["guarani_scraper.spiders"]
-NEWSPIDER_MODULE = "guarani_scraper.spiders"
+SPIDER_MODULES = ["scraper"]
+NEWSPIDER_MODULE = "scraper"
 
 ADDONS = {}
 
@@ -47,13 +47,13 @@ COOKIES_ENABLED = False
 # Enable or disable spider middlewares
 # See https://docs.scrapy.org/en/latest/topics/spider-middleware.html
 # SPIDER_MIDDLEWARES = {
-#    "guarani_scraper.middlewares.GuaraniScraperSpiderMiddleware": 543,
+#    "scraper.middlewares.GuaraniScraperSpiderMiddleware": 543,
 # }
 
 # Enable or disable downloader middlewares
 # See https://docs.scrapy.org/en/latest/topics/downloader-middleware.html
 # DOWNLOADER_MIDDLEWARES = {
-#    "guarani_scraper.middlewares.GuaraniScraperDownloaderMiddleware": 543,
+#    "scraper.middlewares.GuaraniScraperDownloaderMiddleware": 543,
 # }
 
 # Enable or disable extensions
@@ -65,7 +65,7 @@ COOKIES_ENABLED = False
 # Configure item pipelines
 # See https://docs.scrapy.org/en/latest/topics/item-pipeline.html
 ITEM_PIPELINES = {
-    'guarani_scraper.pipelines.GuaraniScraperPipeline': 300,
+    'scraper.pipelines.GuaraniScraperPipeline': 300,
 }
 
 # Enable and configure the AutoThrottle extension (disabled by default)

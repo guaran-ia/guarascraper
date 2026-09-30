@@ -77,10 +77,12 @@ Each record includes:
 
 ## Setup Instructions
 
+Run these commands from a terminal. Replace `<repository-url>` with this repository's Git URL.
+
 1. **Clone the repository**
    ```bash
-   git clone https://github.com/guaran-ia/guarascrapper
-   cd guarascrapper
+   git clone <repository-url> guarascraper
+   cd guarascraper
    ```
 
 2. **Create and activate a virtual environment** (recommended)
@@ -94,27 +96,47 @@ Each record includes:
    source venv/bin/activate
    ```
 
-3. **Install dependencies**
+3. **Install scraper dependencies**
    ```bash
-   pip3 install -r requirements.txt
+   python -m pip install -r requirements.txt
    ```
 
-4. **Clone the language identifier repository**
+4. **Fetch the language identifier dependency**
+
+   The scraper and processor import the language identifier from the Guaran-IA
+   `corpus` repository. Clone it into the project root and check out only the
+   required source directory:
+
    ```bash
-   # clone without blobs and without checking out files
-   git clone --filter=blob:none --no-checkout https://github.com/guaran-ia/corpus.git
-   cd corpus
-   # initialize sparse-checkout and enable 'cone' mode
-   git sparse-checkout init --cone
-   # set the language identifier path
-   git sparse-checkout set src/pipeline/language_identifier
-   # check out the main branch
-   git checkout main
+   git clone --filter=blob:none --sparse https://github.com/guaran-ia/corpus.git corpus
+   git -C corpus sparse-checkout set src/pipeline/language_identifier
+   ```
+
+   Keep the `corpus/` directory beside `cli.py`; it is a runtime dependency and
+   is not included in this repository. The identifier may require model assets
+   or additional packages; follow any setup instructions in that dependency.
+
+5. **(Optional) Install processor dependencies**
+
+   If you plan to normalize and report on downloaded data, install the separate
+   processor dependencies as well:
+
+   ```bash
+   python -m pip install -r src/processor/requirements.txt
+   ```
+
+6. **Check the command-line entry point**
+
+   ```bash
+   python cli.py --help
    ```
 
 ---
 
 ## ▶️ Usage
+
+Run the commands below from the repository root with the virtual environment
+activated.
 
 GuaraScraper can be executed in different ways depending on the desired scraping scope.
 
@@ -149,5 +171,17 @@ python3 cli.py --csv data/web_sources.csv --crawl-domain
 ### 📂 Data output
 
 Extracted text is saved in the corresponding directory (e.g. `data/download/`) in structured `.jsonl` format, along with metadata such as the source URL and domain.
+
+### Process downloaded data (optional)
+
+After installing the processor dependencies, run the processor from the
+repository root:
+
+```bash
+python -m src.processor.formart_data
+```
+
+It reads `data/download/*.jsonl` and writes the normalized dataset and report
+under `data/processed/`.
 
 ---

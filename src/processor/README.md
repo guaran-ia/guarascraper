@@ -27,10 +27,10 @@ data/processed/
 
 ## ⚙️ Script Used
 
-The normalization and reporting were performed using:
+The normalization and reporting are performed using:
 
 ```
-src/guarascraped/formart_data.py
+src/processor/formart_data.py
 ```
 
 This script:
@@ -46,10 +46,11 @@ This script:
 
 ## ▶️ How to Run the Script
 
-From the project root:
+From the repository root, after following the main README's virtual environment
+and language-identifier setup, install processor-specific dependencies and run:
 
 ```bash
-source guarascraper-venv/bin/activate
+python -m pip install -r src/processor/requirements.txt
 python3 -m src.processor.formart_data
 ```
 

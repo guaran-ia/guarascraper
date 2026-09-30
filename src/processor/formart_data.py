@@ -5,7 +5,14 @@ from tqdm import tqdm
 from pathlib import Path
 from urllib.parse import urlparse
 import re
-from src.corpus.src.pipeline.language_identifier.language_identifier import LanguageIdentifier
+import sys
+
+# The language identifier repository is cloned to <repository root>/corpus.
+PROJECT_ROOT = Path(__file__).resolve().parents[2]
+if str(PROJECT_ROOT) not in sys.path:
+    sys.path.insert(0, str(PROJECT_ROOT))
+
+from corpus.src.pipeline.language_identifier.language_identifier import LanguageIdentifier
 
 
 # ============================
