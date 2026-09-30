@@ -13,9 +13,12 @@ The processing pipeline performs the following steps:
 
 - **Document-level metadata normalization:** ensures that all documents have a consistent structure, including fields such as **source**, **url**, **text**, and other relevant metadata.  
 - **Character and word counts:** calculated using Python’s `split()` and spaCy.  
-- **Language identification and scoring:** each document is analyzed with the [Language Identifier Tool](https://github.com/guaran-ia/corpus/tree/main/src/pipeline/language_identifier) to detect its language and compute a `language_score` representing how confidently the model identifies Guaraní words in the document.
+- **Language identification and scoring:** each document is analyzed with the [Language Identifier Tool](https://github.com/guaran-ia/corpus/tree/main/src/pipeline/language_identifier). Only documents classified as `grn` with confidence at least the selected threshold (**0.70** by default) are retained. The `language_score` is classification confidence, not a proportion of Guarani words.
 - **Consistent `.jsonl` format:** ensures all documents are saved in a standardized structure.  
-- **Aggregated dataset statistics:** provides overall summaries, including the total number of documents, total words, the average proportion of Guaraní words, among others.
+- **Aggregated dataset statistics:** reports counts and average classification confidence for retained documents.
+
+See [data formats and filtering](../../docs/data-format.md) for complete field
+definitions, synthetic examples, timestamp conventions, and known limitations.
 
 All processed outputs are stored in:
 
@@ -55,6 +58,15 @@ python -m pip install -r src/processor/requirements.txt
 python -m pip install -r corpus/src/pipeline/language_identifier/requirements.txt
 python3 -m src.processor.formart_data
 ```
+
+Choose a threshold with `--min-language-score` (inclusive, from `0` to `1`):
+
+```bash
+python -m src.processor.formart_data --min-language-score 0.85
+```
+
+The default is `0.70`. A value of `0` removes the numeric confidence cutoff but
+still requires the document's predicted language to be `grn`.
 
 Scraper dependencies are not needed for processor-only use. This script uses
 `spacy.blank("xx")` for tokenization, so no downloaded spaCy language model is

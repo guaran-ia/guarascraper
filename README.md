@@ -126,6 +126,9 @@ Each record includes:
 - source URL  
 - extraction date  
 
+See [data formats and filtering](docs/data-format.md) for synthetic examples,
+field definitions, timestamp conventions, confidence filtering, and limitations.
+
 ### Previously collected pages and FineWeb2 exclusions
 
 Before scheduling a page, the scraper checks both:
@@ -309,6 +312,16 @@ repository root:
 python -m src.processor.formart_data
 ```
 
+To require a higher Guarani classification confidence:
+
+```bash
+python -m src.processor.formart_data --min-language-score 0.85
+```
+
+`--min-language-score` accepts values from `0` to `1` and defaults to `0.70`.
+The boundary is inclusive, and the document must still be classified as `grn`.
+This is model confidence, not a required percentage of Guarani words.
+
 It reads `data/download/*.jsonl` and writes the normalized dataset and report
 under `data/processed/`.
 
@@ -328,6 +341,9 @@ dependency consistency, source compilation, CLI startup, and regression tests
 for Scrapy discovery, crawl modes, text extraction, and JSONL output.
 An independent processor job installs only the processor requirements and
 checks module imports and blank-tokenizer initialization.
+It also tests processor language filtering at the inclusive 0.70 confidence
+boundary. Run these tests in a processor environment with
+`python -m unittest discover -s tests/processor -v`.
 
 To run these checks locally in an activated virtual environment:
 

@@ -6,9 +6,12 @@ from pathlib import Path
 from urllib.parse import urlparse
 import re
 import sys
+import argparse
+import math
 
 # The language identifier repository is cloned to <repository root>/corpus.
 PROJECT_ROOT = Path(__file__).resolve().parents[2]
+MIN_LANGUAGE_SCORE = 0.70
 if str(PROJECT_ROOT) not in sys.path:
     sys.path.insert(0, str(PROJECT_ROOT))
 
@@ -113,10 +116,11 @@ def finalize_report(report: dict) -> dict:
 
     return report
 
-def identify_language(text: str, identifier, gn_code: str) -> dict | None:
+def identify_language(text: str, identifier, gn_code: str,
+                      min_language_score: float = MIN_LANGUAGE_SCORE) -> dict | None:
     """
     Identify language for a given text and return language information
-    only if the predicted language is Guarani.
+    only if the predicted language is Guarani and meets the confidence threshold.
     """
     clean_text = " ".join(text.split())
     if not clean_text.strip():
@@ -125,7 +129,7 @@ def identify_language(text: str, identifier, gn_code: str) -> dict | None:
     result = identifier.identify_languages(clean_text, k=1, raw_output=False)
     lang = result["languages"]
 
-    if lang[0] == gn_code:
+    if lang[0] == gn_code and lang[1] >= min_language_score:
         return {
             "lang": lang[0],
             "score": lang[1],
@@ -140,7 +144,24 @@ def identify_language(text: str, identifier, gn_code: str) -> dict | None:
 # MAIN PROCESS
 # ============================
 
-def main() -> None:
+def confidence_threshold(value: str) -> float:
+    score = float(value)
+    if not math.isfinite(score) or not 0 <= score <= 1:
+        raise argparse.ArgumentTypeError("must be a finite number between 0 and 1")
+    return score
+
+
+def parse_args(argv=None):
+    parser = argparse.ArgumentParser(description="Normalize and filter downloaded Guarani documents.")
+    parser.add_argument(
+        "--min-language-score", type=confidence_threshold, default=MIN_LANGUAGE_SCORE,
+        help="Minimum Guarani classification confidence to retain a document (0–1; default: 0.70)",
+    )
+    return parser.parse_args(argv)
+
+
+def main(argv=None) -> None:
+    args = parse_args(argv)
     from corpus.src.pipeline.language_identifier.language_identifier import LanguageIdentifier
 
     # ANSI colors
@@ -148,7 +169,6 @@ def main() -> None:
     GREEN = "\033[32m"
     YELLOW = "\033[33m"
     RESET = "\033[0m"
-    MIN_LANGUAGE_SCORE = 0.70
 
     GN_CODE = "grn"
 
@@ -165,6 +185,7 @@ def main() -> None:
     identifier = LanguageIdentifier(glotlid=True, fasttext=True, openlid=True)
 
     print(f"{BLUE}=== Processing all domains ==={RESET}")
+    print(f"Minimum Guarani classification confidence: {args.min_language_score:g}")
 
     files = sorted([f for f in os.listdir(INPUT_DIR) if f.endswith(".jsonl")])
     num_domains = len(files)
@@ -219,7 +240,7 @@ def main() -> None:
                     num_words_no_punct = word_count_spacy(clean_text, tokenizer, include_punct=False)
                     num_chars = len(clean_text)
 
-                    lang_info = identify_language(clean_text, identifier, GN_CODE)
+                    lang_info = identify_language(clean_text, identifier, GN_CODE, args.min_language_score)
 
                     if lang_info  and lang_info['lang'] == GN_CODE:
                         lang = lang_info["lang"]

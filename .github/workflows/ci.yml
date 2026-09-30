@@ -48,3 +48,5 @@ jobs:
         run: python -m pip check
       - name: Check processor imports and blank tokenizer
         run: python -c "import spacy; import src.processor.formart_data; spacy.blank('xx')"
+      - name: Test processor confidence filtering
+        run: python -m unittest discover -s tests/processor -v
